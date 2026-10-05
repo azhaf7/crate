@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#121013">
+<title>A record for you · Crate</title>
+<meta name="description" content="Someone sent you a song as a vinyl record. Tap to open it.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23141416'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23e3c9a0'/%3E%3Ccircle cx='16' cy='16' r='1.5' fill='%23000'/%3E%3C/svg%3E">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="stylesheet" href="record.css">
+<script src="record.js" defer></script>
+</head>
+<body>
+<main class="page" id="page">
+  <header class="intro">
+    <p class="from" id="fromLine">A friend sent you a record</p>
+    <h1 class="headline" id="headline">Something to listen to</h1>
+  </header>
+
+  <button class="stage" id="stage" type="button" aria-label="Open the record">
+    <div class="record-wrap" id="recordWrap">
+      <div class="record" id="record">
+        <div class="record-ring"></div>
+        <div class="record-label art"></div>
+        <div class="record-hole"></div>
+      </div>
+      <div class="record-gloss"></div>
+    </div>
+    <div class="sleeve art">
+      <div class="sleeve-sheen"></div>
+      <span class="sticker" id="sticker">Tap to open</span>
+    </div>
+  </button>
+
+  <section class="song" id="song" hidden aria-live="polite">
+    <div class="song-text">
+      <h2 class="song-title" id="songTitle"></h2>
+      <p class="song-artist" id="songArtist"></p>
+    </div>
+    <div class="actions">
+      <a class="btn btn-spotify" id="spotifyLink" target="_blank" rel="noopener">Open in Spotify</a>
+      <a class="btn btn-apple" id="appleLink" target="_blank" rel="noopener">Apple Music</a>
+    </div>
+    <button class="save" id="saveBtn" type="button">Save in Crate</button>
+    <a class="app-link" id="appLink" href="../">Make your own record on Crate</a>
+  </section>
+</main>
+</body>
+</html>

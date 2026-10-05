@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#efece7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Crate">
+<title>Crate · send songs as records</title>
+<meta name="description" content="Paste a Spotify or Apple Music link and send it to a friend as a sealed vinyl record.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<script src="config.js"></script>
+<script src="app.js" defer></script>
+</head>
+<body>
+<div class="app">
+
+  <!-- Make -->
+  <section class="view" id="view-make" aria-labelledby="make-title">
+    <header class="top">
+      <h1 id="make-title" class="wordmark">crate</h1>
+      <p class="sub">Send a song as a record.</p>
+    </header>
+
+    <div class="stage" id="makeStage" aria-hidden="true">
+      <div class="disc" id="makeDisc"><div class="disc-label" id="makeLabel"></div><div class="disc-hole"></div></div>
+      <div class="sleeve" id="makeSleeve">
+        <div class="sleeve-sheen"></div>
+        <span class="sticker" id="makeSticker">Paste a song</span>
+      </div>
+    </div>
+
+    <form class="paste" id="pasteForm" autocomplete="off">
+      <label for="link" class="visually-hidden">Spotify or Apple Music link</label>
+      <input id="link" name="link" type="url" inputmode="url" placeholder="Paste a Spotify or Apple Music link">
+      <button type="button" class="btn ghost" id="pasteBtn">Paste</button>
+    </form>
+    <p class="status" id="status" role="status"></p>
+
+    <form class="manual" id="manual" hidden>
+      <p class="hint">Couldn't read that link. Type the song instead:</p>
+      <label class="field"><span>Song</span><input id="mTitle" required></label>
+      <label class="field"><span>Artist</span><input id="mArtist" required></label>
+      <button class="btn dark" type="submit">Make the record</button>
+    </form>
+
+    <section class="studio" id="studio" hidden aria-label="Your record">
+      <div class="song">
+        <div class="song-title" id="sTitle"></div>
+        <div class="song-artist" id="sArtist"></div>
+      </div>
+      <div class="fields">
+        <label class="field"><span>From</span><input id="from" maxlength="30" placeholder="Your name"></label>
+        <label class="field"><span>Note</span><input id="note" maxlength="80" placeholder="this one's for the drive home"></label>
+      </div>
+      <button class="btn dark big" id="sendBtn" type="button">Send record</button>
+      <div class="shortcuts" aria-label="Send with">
+        <a class="sc" id="scMessages" target="_blank" rel="noopener"><span class="sc-dot" style="background:#34c759">✉︎</span>Messages</a>
+        <a class="sc" id="scWhatsApp" target="_blank" rel="noopener"><span class="sc-dot" style="background:#25d366">W</span>WhatsApp</a>
+        <a class="sc" id="scTelegram" target="_blank" rel="noopener"><span class="sc-dot" style="background:#2aabee">T</span>Telegram</a>
+        <a class="sc" id="scEmail"><span class="sc-dot" style="background:#8a847c">@</span>Email</a>
+        <a class="sc" id="scX" target="_blank" rel="noopener"><span class="sc-dot" style="background:#141210">X</span>X</a>
+        <button class="sc" id="scCopy" type="button"><span class="sc-dot" style="background:#e5484d">⧉</span><span id="copyLabel">Copy link</span></button>
+      </div>
+      <a class="preview-link" id="previewLink" target="_blank" rel="noopener">See what they'll see</a>
+    </section>
+  </section>
+
+  <!-- Crate -->
+  <section class="view" id="view-crate" aria-labelledby="crate-title" hidden>
+    <header class="top">
+      <h1 id="crate-title" class="title">Records</h1>
+      <p class="sub" id="crateCount"></p>
+    </header>
+    <div class="seg" role="tablist" aria-label="Which records">
+      <button role="tab" id="segReceived" aria-selected="true">Received</button>
+      <button role="tab" id="segSent" aria-selected="false">Sent</button>
+    </div>
+    <div class="grid" id="crateGrid"></div>
+    <p class="empty" id="crateEmpty" hidden></p>
+  </section>
+
+  <!-- Library -->
+  <section class="view" id="view-library" aria-labelledby="lib-title" hidden>
+    <header class="top">
+      <h1 id="lib-title" class="title">Library</h1>
+      <p class="sub">Pick a song from your music to send.</p>
+    </header>
+    <div id="libBody"></div>
+  </section>
+
+  <nav class="tabs" aria-label="Crate">
+    <a href="#/" id="tabMake" class="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>Make</a>
+    <a href="#/records" id="tabCrate" class="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="16" height="3" rx="1" fill="currentColor"/><rect x="3" y="10.5" width="18" height="3" rx="1" fill="currentColor"/><rect x="2" y="15" width="20" height="4" rx="1" fill="currentColor"/></svg>Records</a>
+    <a href="#/library" id="tabLibrary" class="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h12M4 12h12M4 18h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="18" cy="17" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20.5 17V8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Library</a>
+  </nav>
+</div>
+</body>
+</html>

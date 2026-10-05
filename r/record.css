@@ -1,0 +1,200 @@
+/* Crate: the page a friend opens from a record link. Same look and motion as Vinyl Player's shared record. */
+
+@property --tint {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #8a6a4a;
+}
+
+:root {
+  --bg: #121013;
+  --tint: #8a6a4a;
+  --sticker: oklch(0.86 0.12 80);
+  --label-ring: oklch(0.88 0.04 80);
+  --spotify: #1ed760;
+  --art: linear-gradient(160deg, oklch(0.6 0.1 60), oklch(0.3 0.06 40));
+  --ease-slide: cubic-bezier(.22, 1, .36, 1);
+}
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: oklch(0.85 0.08 70); }
+a:hover { color: oklch(0.92 0.06 70); }
+
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 36px;
+  padding: 48px 20px;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, sans-serif;
+  background: radial-gradient(70% 60% at 50% 30%, color-mix(in oklch, var(--tint) 45%, var(--bg)) 0%, var(--bg) 75%);
+  transition: --tint 900ms ease;
+}
+
+/* Header */
+.intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+.from {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+.headline {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff;
+  text-wrap: balance;
+}
+
+/* Stage: 560×320, sleeve over record */
+.stage {
+  all: unset;
+  position: relative;
+  display: block;
+  width: min(560px, 92vw);
+  aspect-ratio: 560 / 320;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.stage:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.6); outline-offset: 8px; border-radius: 12px; }
+.stage[aria-disabled="true"] { cursor: default; }
+
+.art { background: var(--art); }
+
+.record-wrap {
+  position: absolute;
+  top: 2%;
+  left: 2%;
+  width: 54%;
+  aspect-ratio: 1;
+  transition: transform 1100ms var(--ease-slide);
+}
+.is-open .record-wrap { transform: translateX(76%); }
+
+.record {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  will-change: transform;
+  background:
+    repeating-conic-gradient(from 10deg, rgba(255, 255, 255, 0.06) 0deg 45deg, rgba(0, 0, 0, 0) 45deg 90deg),
+    repeating-radial-gradient(circle at center, #101012 0px, #101012 1.1px, #1c1c20 1.5px, #101012 2.3px);
+  box-shadow: 0 0 0 3px #0a0a0b inset, 10px 18px 40px rgba(0, 0, 0, 0.55);
+}
+.record-ring { position: absolute; inset: 19.5%; border-radius: 50%; background: var(--label-ring); }
+.record-label { position: absolute; inset: 21%; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5); }
+.record-hole { position: absolute; left: 48.5%; top: 48.5%; width: 3%; height: 3%; border-radius: 50%; background: #000; }
+
+/* Static specular highlight: the record turns under the light. */
+.record-gloss {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background: conic-gradient(transparent 0deg, rgba(255, 255, 255, 0.12) 28deg, transparent 54deg, transparent 180deg, rgba(255, 255, 255, 0.08) 206deg, transparent 232deg);
+}
+
+.sleeve {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 57%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.2) inset, 8px 0 18px rgba(0, 0, 0, 0.45), 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+.sleeve-sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.2), transparent 40%, rgba(0, 0, 0, 0.14));
+}
+.sticker {
+  position: absolute;
+  right: -14px;
+  top: 18px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--sticker);
+  color: #241c16;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  transform: rotate(6deg);
+}
+.is-open .sticker { display: none; }
+
+/* Song info, revealed after opening */
+.song {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+  max-width: 420px;
+}
+.song[hidden] { display: none; }
+.song-text { display: flex; flex-direction: column; gap: 4px; }
+.song-title { margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -0.02em; color: #fff; }
+.song-artist { margin: 0; font-size: 17px; color: rgba(255, 255, 255, 0.65); }
+
+.actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.btn {
+  display: flex;
+  align-items: center;
+  height: 46px;
+  padding: 0 22px;
+  border-radius: 23px;
+  font-size: 15px;
+  text-decoration: none;
+}
+.btn-spotify, .btn-spotify:hover { background: var(--spotify); color: #000; font-weight: 700; }
+.btn-apple, .btn-apple:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.2) inset;
+}
+.btn:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.7); outline-offset: 3px; }
+
+.app-link { font-size: 13px; color: rgba(255, 255, 255, 0.55); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.app-link:hover { color: rgba(255, 255, 255, 0.85); }
+
+@media (prefers-reduced-motion: reduce) {
+  .page { transition: none; }
+  .record-wrap { transition-duration: 1ms; }
+}
+
+/* Save in Crate */
+.save {
+  height: 46px;
+  padding: 0 22px;
+  border: none;
+  border-radius: 23px;
+  background: #f4eee6;
+  color: #141210;
+  font: 700 15px -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, sans-serif;
+  cursor: pointer;
+}
+.save:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.7); outline-offset: 3px; }
+.save[data-saved="true"] { background: rgba(255, 255, 255, 0.12); color: #fff; box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.2) inset; }
