@@ -123,7 +123,8 @@
   // Each browser that sends a record gets an anonymous Supabase identity (no account, no email).
   // Writes are fire-and-forget: the link carries the whole song, so a record opens even when the
   // database can't be reached, and unsent rows are retried next time.
-  const AUTH = 'crate-auth', STATUS = 'crate-status';
+  const AUTH = 'crate-auth', STATUS = 'crate-status', ACCOUNT = 'crate-account', CLAIM = 'crate-claim';
+  const account = () => store.get(ACCOUNT, null);   // { email } once signed in with email
   const dbOn = () => !!(cfg.supabaseUrl && cfg.supabaseAnonKey);
   let authing = null;
 
@@ -131,7 +132,9 @@
     const r = await fetch(cfg.supabaseUrl + '/auth/v1/' + path, { method: 'POST',
       headers: { apikey: cfg.supabaseAnonKey, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     if (!r.ok) throw Object.assign(new Error('auth ' + r.status), { status: r.status });
-    const j = await r.json();
+    return keepSession(await r.json());
+  }
+  function keepSession(j) {
     const a = { access: j.access_token, refresh: j.refresh_token, until: Date.now() + ((j.expires_in || 3600) - 60) * 1000 };
     store.set(AUTH, a);
     return a;
@@ -142,7 +145,11 @@
     if (!authing) {
       // A refresh token that's been revoked means a new identity; a network error just waits for next time.
       authing = (a && a.refresh
-        ? authCall('token?grant_type=refresh_token', { refresh_token: a.refresh }).catch((e) => { if (e.status >= 400 && e.status < 500) return authCall('signup', {}); throw e; })
+        ? authCall('token?grant_type=refresh_token', { refresh_token: a.refresh }).catch((e) => {
+            if (!(e.status >= 400 && e.status < 500)) throw e;
+            if (account()) { store.set(ACCOUNT, null); paintAccount(); }   // signed out elsewhere
+            return authCall('signup', {});
+          })
         : authCall('signup', {})).finally(() => { authing = null; });
     }
     return authing;
@@ -154,7 +161,8 @@
     const r = await fetch(cfg.supabaseUrl + '/rest/v1/' + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
     if (r.status === 401) store.set(AUTH, Object.assign(a, { until: 0 }));
     if (!r.ok) throw new Error('db ' + r.status);
-    return method === 'GET' ? r.json() : null;
+    const t = await r.text();
+    return t ? JSON.parse(t) : null;
   }
 
   const dbRow = (r) => ({ id: r.rid, sender_name: (r.from || '').slice(0, 40) || null, to_name: (r.to || '').slice(0, 40) || null,
@@ -166,8 +174,132 @@
     const todo = crate().filter((r) => r.kind === 'sent' && r.rid && !r.synced);
     if (!dbOn() || !todo.length) return;
     await db('POST', 'records', todo.map(dbRow), 'resolution=ignore-duplicates,return=minimal');
-    const done = new Set(todo.map((r) => r.rid));
-    store.set(CRATE, crate().map((r) => (r.kind === 'sent' && done.has(r.rid) ? Object.assign(r, { synced: true }) : r)));
+    const done = new Set(todo.map((r) => r.rid)), acct = account() && account().email;
+    store.set(CRATE, crate().map((r) => (r.kind === 'sent' && done.has(r.rid) ? Object.assign(r, { synced: true }, acct ? { acct } : {}) : r)));
+  }
+
+  // ---------- Email sign-in (optional): the same records on every device ----------
+  // No password: Supabase emails a 6-digit code that's typed in here. A code, not a link, because on a
+  // phone the link would open in the browser, not in the home-screen app.
+  const savedRow = (r) => ({ song_key: r.id.slice(0, 300), title: (r.title || 'Untitled').slice(0, 200), artist: (r.artist || '').slice(0, 200),
+    from_name: (r.from || '').slice(0, 40) || null, note: (r.note || '').slice(0, 80) || null, art: artOK(r.art) ? r.art : null,
+    spotify: /^[A-Za-z0-9]{22}$/.test(r.spotify) ? r.spotify : null, apple: /^\d{4,15}$/.test(r.apple) ? r.apple : null });
+
+  async function sendCode(email) {
+    // Records already sent from this browser move into the account after sign-in.
+    store.set(CLAIM, null);
+    if (store.get(AUTH, null) && !account()) {
+      try { store.set(CLAIM, await db('POST', 'rpc/start_claim', {})); } catch (e) { /* nothing to move */ }
+    }
+    const r = await fetch(cfg.supabaseUrl + '/auth/v1/otp', { method: 'POST',
+      headers: { apikey: cfg.supabaseAnonKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, create_user: true }) });
+    if (!r.ok) throw new Error(r.status === 429 ? 'Too many codes asked for. Wait a minute and try again.' : 'Couldn’t send a code to that address.');
+  }
+
+  async function verifyCode(email, token) {
+    const r = await fetch(cfg.supabaseUrl + '/auth/v1/verify', { method: 'POST',
+      headers: { apikey: cfg.supabaseAnonKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'email', email, token }) });
+    if (!r.ok) throw new Error('That code didn’t work. Check it, or send a new one.');
+    const j = await r.json();
+    keepSession(j);
+    signedIn((j.user && j.user.email) || email);
+  }
+
+  async function signedIn(email) {
+    store.set(ACCOUNT, { email });
+    const claim = store.get(CLAIM, null);
+    if (claim) { try { await db('POST', 'rpc/finish_claim', { c: claim }); } catch (e) {} store.set(CLAIM, null); }
+    await syncAll();
+  }
+
+  // A sign-in link (if the email template has one) lands here with the session in the address.
+  async function finishLinkSignIn() {
+    const h = new URLSearchParams(location.hash.slice(1));
+    if (!h.get('access_token') || !h.get('refresh_token')) return;
+    history.replaceState(null, '', location.pathname + '#/records');
+    keepSession({ access_token: h.get('access_token'), refresh_token: h.get('refresh_token'), expires_in: Number(h.get('expires_in')) || 3600 });
+    try {
+      const u = await fetch(cfg.supabaseUrl + '/auth/v1/user', { headers: { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + h.get('access_token') } }).then((r) => r.json());
+      if (u && u.email) await signedIn(u.email);
+    } catch (e) {}
+  }
+
+  function signOut() {
+    const a = store.get(AUTH, null);
+    if (a && a.access) fetch(cfg.supabaseUrl + '/auth/v1/logout', { method: 'POST', headers: { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + a.access } }).catch(() => {});
+    // The records stay in the account; this device forgets them.
+    [AUTH, ACCOUNT, STATUS, CRATE, CLAIM].forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} });
+    paintAccount(); paintStatus();
+  }
+
+  // Signed in: push what's only here, then take the account's copy of Sent and Saved.
+  async function syncAll() {
+    const me = account();
+    if (!dbOn() || !me) return refreshStatus();
+    try {
+      await syncSent();
+      const todo = crate().filter((r) => r.kind === 'received' && r.acct !== me.email);
+      if (todo.length) await db('POST', 'saved', todo.map(savedRow), 'resolution=ignore-duplicates,return=minimal');
+      const [sent, saved] = await Promise.all([
+        db('GET', 'records?select=*&order=created_at.desc&limit=500'),
+        db('GET', 'saved?select=*&order=saved_at.desc&limit=500'),
+      ]);
+      const rids = new Set(sent.map((r) => r.id)), keys = new Set(saved.map((r) => r.song_key));
+      const inAccount = (r) => (r.kind === 'sent' ? rids.has(r.rid) : keys.has(r.id));
+      // Removed on another device: remove here too. Everything else here belongs to the account now.
+      const list = crate().filter((r) => !(r.acct === me.email && !inAccount(r)))
+        .map((r) => (inAccount(r) ? Object.assign(r, { acct: me.email, synced: true }) : r));
+      for (const r of sent) {
+        if (list.some((x) => x.kind === 'sent' && x.rid === r.id)) continue;
+        list.push({ id: idOf({ spotify: r.spotify, apple: r.apple, title: r.title, artist: r.artist }), kind: 'sent', rid: r.id,
+          title: r.title, artist: r.artist, art: r.art || '', spotify: r.spotify || '', apple: r.apple || '', from: r.sender_name || '',
+          to: r.to_name || '', note: r.note || '', at: Date.parse(r.created_at), synced: true, acct: me.email });
+      }
+      for (const r of saved) {
+        if (list.some((x) => x.kind === 'received' && x.id === r.song_key)) continue;
+        list.push({ id: r.song_key, kind: 'received', title: r.title, artist: r.artist, art: r.art || '', spotify: r.spotify || '',
+          apple: r.apple || '', from: r.from_name || '', note: r.note || '', at: Date.parse(r.saved_at), acct: me.email });
+      }
+      store.set(CRATE, list.sort((a, b) => b.at - a.at).slice(0, 500));
+      const st = {};
+      sent.forEach((r) => { st[r.id] = { opened: r.opened_at, opens: r.opens, seen: r.seen_at }; });
+      store.set(STATUS, st);
+      paintStatus();
+    } catch (e) { /* offline: this device's copy stays */ }
+  }
+
+  let codeFor = '';   // the email a code was sent to, while waiting for it
+  function paintAccount() {
+    const box = $('account'), me = account();
+    box.textContent = '';
+    if (!dbOn()) return;
+    if (me) {
+      box.className = 'account in';
+      const t = document.createElement('span'); t.textContent = 'Synced with ' + me.email;
+      const out = document.createElement('button'); out.type = 'button'; out.className = 'link'; out.textContent = 'Sign out';
+      out.addEventListener('click', () => { if (confirm('Sign out? Your records stay in your account; this device forgets them.')) signOut(); });
+      box.append(t, out);
+      return;
+    }
+    box.className = 'account card';
+    box.innerHTML = codeFor
+      ? '<h2>Check your email</h2><p></p><form class="inline"><label class="visually-hidden" for="acCode">Code</label><input id="acCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="6-digit code" required><button class="pill accent" type="submit">Sign in</button></form><p class="ac-msg" role="status"></p><button class="link" type="button">Use a different email</button>'
+      : '<h2>Your records on every device</h2><p>Sign in with your email to see what you’ve sent and saved on any phone or computer. No password: we email you a code.</p><form class="inline"><label class="visually-hidden" for="acEmail">Email</label><input id="acEmail" type="email" autocomplete="email" placeholder="you@example.com" required><button class="pill accent" type="submit">Send code</button></form><p class="ac-msg" role="status"></p>';
+    const msg = box.querySelector('.ac-msg'), form = box.querySelector('form'), btn = form.querySelector('button');
+    if (codeFor) {
+      box.querySelector('p').textContent = 'We sent a code to ' + codeFor + '. Type it here.';
+      box.querySelector('.link').addEventListener('click', () => { codeFor = ''; paintAccount(); });
+    }
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      btn.disabled = true; msg.classList.remove('error'); msg.textContent = codeFor ? 'Signing in…' : 'Sending…';
+      try {
+        if (codeFor) { await verifyCode(codeFor, $('acCode').value.replace(/\s/g, '')); codeFor = ''; }
+        else { const em = $('acEmail').value.trim(); await sendCode(em); codeFor = em; }
+        paintAccount();
+        if (codeFor) $('acCode').focus();
+      } catch (err) { msg.textContent = err.message; msg.classList.add('error'); btn.disabled = false; }
+    });
   }
 
   // Only browsers that have sent something talk to the database.
@@ -314,7 +446,7 @@
     if (!current) return;
     keep(current, 'sent');
     renderRecent();
-    refreshStatus();
+    syncAll();
   }
 
   function wireMake() {
@@ -418,6 +550,7 @@
         const same = (y) => y.kind === r.kind && (r.rid ? y.rid === r.rid : y.id === r.id);
         store.set(CRATE, crate().filter((y) => !same(y)));
         if (r.kind === 'sent' && r.rid && r.synced) db('DELETE', 'records?id=eq.' + r.rid, null, 'return=minimal').catch(() => {});
+        if (r.kind === 'received' && r.acct && account()) db('DELETE', 'saved?song_key=eq.' + encodeURIComponent(r.id), null, 'return=minimal').catch(() => {});
         renderCrate(); renderRecent();
       });
       a.appendChild(x);
@@ -543,9 +676,10 @@
   window.addEventListener('hashchange', route);
   window.addEventListener('storage', (e) => { if (e.key === CRATE && !$('view-crate').hidden) renderCrate(); });
   // Statuses on launch, and whenever Crate comes back to the front.
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshStatus(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) syncAll(); });
   paintBadge();
-  refreshStatus();
+  paintAccount();
+  finishLinkSignIn().then(syncAll);
   // Opened with ?link=… (e.g. from a shortcut or the share sheet): make it straight away.
   const incoming = new URLSearchParams(location.search).get('link') || new URLSearchParams(location.search).get('text');
   finishSpotifyLogin().then(() => {

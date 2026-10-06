@@ -16,7 +16,8 @@ It's a web app: it works in any browser, and on iPhone or Android you can add it
   Recently Sent shows each record as **Sealed** or **Opened**, and the badge at the top counts records
   opened since you last looked.
 - **Records:** the records you've sent, and the ones friends sent you that you saved. They're kept in
-  this browser on this device; there's no account.
+  this browser. Sign in with your email (optional, no password: a 6-digit code) and they follow you to
+  every phone and computer; records sent before signing in move into the account.
 - **The record page:** your friend taps the sleeve, the record slides out and spins, and Apple's
   30-second preview starts playing. Then they can open it in Spotify or Apple Music, or save it.
 - **Library (optional):** connect Spotify to send songs straight from your liked songs, recently played
@@ -40,7 +41,17 @@ record gets an anonymous identity automatically: no sign-up, no email.
 
 1. In Supabase: **Authentication → Sign In / Providers → Allow anonymous sign-ins** (on).
 2. **SQL Editor → New query**, paste all of [`supabase/schema.sql`](supabase/schema.sql), **Run**.
-3. Put the project URL and the **anon / publishable** key in `config.js`.
+3. Run [`supabase/accounts.sql`](supabase/accounts.sql) the same way (email sign-in and saved records).
+4. Put the project URL and the **anon / publishable** key in `config.js`.
+
+For email sign-in:
+
+- **Authentication → Emails → Templates:** in **Magic Link** and **Confirm signup**, add the code to the
+  message, e.g. `<p>Your Crate code: <strong>{{ .Token }}</strong></p>`.
+- **Authentication → URL Configuration → Site URL:** your Crate address (e.g. `https://crate-three-mu.vercel.app/`).
+- Supabase's built-in email only reaches your own team's addresses and sends a few an hour. For everyone
+  else, set up your own sender under **Project Settings → Authentication → SMTP Settings** (e.g. Resend,
+  or a Gmail account with an app password).
 
 What's stored per record: a random id, who it's to and from (the names typed in), the song, the note,
 and when it was first opened and how many times. Senders can only read their own records. Anyone with a
@@ -64,5 +75,6 @@ index.html, app.css, app.js   The app: Make, Records, Library
 r/                            The record page friends open (same motion as Vinyl Player's)
 config.js                     Supabase URL + anon key, Spotify Client ID (optional)
 supabase/schema.sql           The database: records, who can see them, open receipts
+supabase/accounts.sql         Email sign-in: saved records per account, moving records into an account
 manifest.webmanifest, sw.js   Add to home screen, works on a poor connection
 ```
