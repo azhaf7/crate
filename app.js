@@ -191,7 +191,8 @@
     if (store.get(AUTH, null) && !account()) {
       try { store.set(CLAIM, await db('POST', 'rpc/start_claim', {})); } catch (e) { /* nothing to move */ }
     }
-    const r = await fetch(cfg.supabaseUrl + '/auth/v1/otp', { method: 'POST',
+    const back = encodeURIComponent(location.origin + location.pathname);
+    const r = await fetch(cfg.supabaseUrl + '/auth/v1/otp?redirect_to=' + back, { method: 'POST',
       headers: { apikey: cfg.supabaseAnonKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, create_user: true }) });
     if (!r.ok) throw new Error(r.status === 429 ? 'Too many codes asked for. Wait a minute and try again.' : 'Couldn’t send a code to that address.');
   }
@@ -287,7 +288,7 @@
       : '<h2>Your records on every device</h2><p>Sign in with your email to see what you’ve sent and saved on any phone or computer. No password: we email you a code.</p><form class="inline"><label class="visually-hidden" for="acEmail">Email</label><input id="acEmail" type="email" autocomplete="email" placeholder="you@example.com" required><button class="pill accent" type="submit">Send code</button></form><p class="ac-msg" role="status"></p>';
     const msg = box.querySelector('.ac-msg'), form = box.querySelector('form'), btn = form.querySelector('button');
     if (codeFor) {
-      box.querySelector('p').textContent = 'We sent a code to ' + codeFor + '. Type it here.';
+      box.querySelector('p').textContent = 'We emailed ' + codeFor + '. Type the code from it here, or just tap the link in it.';
       box.querySelector('.link').addEventListener('click', () => { codeFor = ''; paintAccount(); });
     }
     form.addEventListener('submit', async (e) => {
@@ -334,7 +335,9 @@
     const n = newOpens().length, b = $('inboxBadge');
     b.hidden = !n;
     b.textContent = n > 9 ? '9+' : String(n);
-    $('inbox').setAttribute('aria-label', n ? n + (n === 1 ? ' record' : ' records') + ' opened since you last looked' : 'Your records');
+    $('tabCrate').setAttribute('aria-label', n ? 'Records, ' + n + ' newly opened' : 'Records');
+    // New opens: the tab goes straight to Sent.
+    $('tabCrate').setAttribute('href', n ? '#/records/sent' : '#/records');
   }
   function paintStatus() {
     paintBadge();
@@ -403,7 +406,6 @@
     $('hero-title').textContent = 'Ready to Send';
     $('sTitle').textContent = rec.title;
     $('sArtist').textContent = rec.artist || ' ';
-    $('sendBtn').hidden = false;
     $('studio').hidden = false;
     $('manual').hidden = true;
     $('link').value = '';
@@ -417,12 +419,20 @@
     current.to = $('to').value.trim();
     current.note = $('note').value.trim();
     store.set(FROM, current.from);
-    const url = shareURL(current), text = shareText(current), both = text + '\n' + url;
-    $('scMessages').href = 'sms:&body=' + encodeURIComponent(both);
-    $('scWhatsApp').href = 'https://wa.me/?text=' + encodeURIComponent(both);
-    $('scTelegram').href = 'https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text);
-    $('scEmail').href = 'mailto:?subject=' + encodeURIComponent(text) + '&body=' + encodeURIComponent(both);
-    $('previewLink').href = url;
+    $('previewLink').href = shareURL(current);
+  }
+
+  // Back to an empty card, ready for the next song.
+  function resetMake() {
+    current = null;
+    $('makeStage').classList.remove('ready', 'pop');
+    $('makeArt').style.background = ''; $('makeLabel').style.background = ''; $('makeCard').style.background = '';
+    $('makeEmpty').hidden = false;
+    $('hero-title').textContent = 'Make a Record';
+    $('sTitle').textContent = 'Nothing pressed yet';
+    $('sArtist').textContent = 'Spotify and Apple Music links work';
+    $('studio').hidden = true;
+    $('to').value = ''; $('note').value = '';
   }
 
   function setStatus(msg, error) {
@@ -433,12 +443,15 @@
   async function makeFrom(text) {
     if (!text.trim()) return;
     setStatus('Finding the song…');
+    $('makeStage').classList.add('loading');
     try {
       showRecord(await resolve(text));
     } catch (e) {
       setStatus(e.message, true);
       $('manual').hidden = !e.manual;
       if (e.manual) $('mTitle').focus();
+    } finally {
+      $('makeStage').classList.remove('loading');
     }
   }
 
@@ -466,23 +479,41 @@
                                    spotify: link.kind === 'spotify' ? link.id : '', apple: link.kind === 'apple' ? link.id : '' }));
     });
     ['from', 'to', 'note'].forEach((id) => $(id).addEventListener('input', updateShare));
-    // Send and More both open the phone's share sheet; without one, Send copies the link.
-    const shareSheet = async () => {
+    // Send opens one sheet with two choices: the phone's own share list, or copy the link.
+    const sheet = $('sendSheet');
+    let wasSent = false;
+    const markSent = (msg) => {
+      sent(); wasSent = true;
+      $('sheetNote').textContent = msg;
+      $('sheet-title').textContent = 'Sent ✓';
+    };
+    $('sendBtn').addEventListener('click', () => {
       if (!current) return;
       updateShare();
-      const url = shareURL(current);
-      if (navigator.share) {
-        try { await navigator.share({ title: current.title + ' · ' + current.artist, text: shareText(current), url }); sent(); setStatus('Sent. You’ll see here when it’s opened.'); }
-        catch (e) { /* closed the share sheet */ }
-      } else {
-        copy(url); sent(); setStatus('Link copied. Paste it to your friend.');
-      }
-    };
-    $('sendBtn').addEventListener('click', shareSheet);
-    $('scMore').hidden = !navigator.share;
-    $('scMore').addEventListener('click', shareSheet);
-    ['scMessages', 'scWhatsApp', 'scTelegram', 'scEmail'].forEach((id) => $(id).addEventListener('click', sent));
-    $('scCopy').addEventListener('click', () => { updateShare(); copy(shareURL(current)); sent(); });
+      wasSent = false;
+      $('sheetArt').style.background = artCSS(current.art);
+      $('sheet-title').textContent = current.to ? 'Send to ' + current.to : 'Your record is ready';
+      $('sheetSub').textContent = current.title + (current.artist ? ' · ' + current.artist : '');
+      $('sheetNote').textContent = '';
+      // Without a share list (most desktop browsers), copying is the one choice, so it leads.
+      $('shShare').hidden = !navigator.share;
+      $('shCopy').classList.toggle('accent', !navigator.share);
+      sheet.showModal();
+    });
+    $('shShare').addEventListener('click', async () => {
+      try {
+        await navigator.share({ title: current.title + ' · ' + current.artist, text: shareText(current), url: shareURL(current) });
+        markSent('You’ll see on Make when it’s opened.');
+      } catch (e) { /* closed the share list */ }
+    });
+    $('shCopy').addEventListener('click', () => {
+      copy(shareURL(current));
+      markSent('Link copied. Paste it in any chat.');
+    });
+    $('shDone').addEventListener('click', () => sheet.close());
+    // Tapping outside the sheet closes it.
+    sheet.addEventListener('click', (e) => { if (e.target === sheet) sheet.close(); });
+    sheet.addEventListener('close', () => { if (wasSent) { resetMake(); setStatus(''); } });
   }
 
   function copy(text) {
@@ -657,7 +688,7 @@
   // ---------- Routing ----------
   function route() {
     const h = location.hash.replace(/^#\/?/, '').split('?')[0];
-    const view = h.startsWith('records') ? 'crate' : h === 'library' ? 'library' : 'make';
+    const view = h.startsWith('records') ? 'crate' : h === 'library' && spotifyOn() ? 'library' : 'make';
     if (h === 'records/sent') crateKind = 'sent';
     if (h === 'records/received') crateKind = 'received';
     ['make', 'crate', 'library'].forEach((v) => { $('view-' + v).hidden = v !== view; });
@@ -673,6 +704,8 @@
   $('segReceived').addEventListener('click', () => { crateKind = 'received'; renderCrate(); });
   $('segSent').addEventListener('click', () => { crateKind = 'sent'; renderCrate(); });
   wireMake();
+  // Library needs a Spotify app; without one the tab would only explain that, so it's left out.
+  $('tabLibrary').hidden = !spotifyOn();
   window.addEventListener('hashchange', route);
   window.addEventListener('storage', (e) => { if (e.key === CRATE && !$('view-crate').hidden) renderCrate(); });
   // Statuses on launch, and whenever Crate comes back to the front.

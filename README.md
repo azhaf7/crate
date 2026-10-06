@@ -12,9 +12,10 @@ It's a web app: it works in any browser, and on iPhone or Android you can add it
 
 ## How it works
 
-- **Make:** paste a link to one song. Add who it's for, your name and an optional note, then send.
-  Recently Sent shows each record as **Sealed** or **Opened**, and the badge at the top counts records
-  opened since you last looked.
+- **Make:** paste a link to one song. Add who it's for, your name and an optional note, then **Send
+  record**: a sheet offers your phone's share list (Messages, WhatsApp, AirDrop…) or Copy link.
+  Recently Sent shows each record as **Sealed** or **Opened**, and a badge on the Records tab counts
+  records opened since you last looked.
 - **Records:** the records you've sent, and the ones friends sent you that you saved. They're kept in
   this browser. Sign in with your email (optional, no password: a 6-digit code) and they follow you to
   every phone and computer; records sent before signing in move into the account.
@@ -46,8 +47,10 @@ record gets an anonymous identity automatically: no sign-up, no email.
 
 For email sign-in:
 
-- **Authentication → Emails → Templates:** in **Magic Link** and **Confirm signup**, add the code to the
-  message, e.g. `<p>Your Crate code: <strong>{{ .Token }}</strong></p>`.
+- Sign-in works with Supabase's default emails (tap the link in them). To also show a code people can
+  type (better for the home-screen app), set up SMTP below first; Supabase only lets you edit
+  **Authentication → Emails → Templates** after that. Then add
+  `<p>Your Crate code: <strong>{{ .Token }}</strong></p>` to **Magic Link** and **Confirm signup**.
 - **Authentication → URL Configuration → Site URL:** your Crate address (e.g. `https://crate-three-mu.vercel.app/`).
 - Supabase's built-in email only reaches your own team's addresses and sends a few an hour. For everyone
   else, set up your own sender under **Project Settings → Authentication → SMTP Settings** (e.g. Resend,

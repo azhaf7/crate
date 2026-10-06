@@ -30,18 +30,22 @@ a { color: inherit; }
 .h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
 .sub { margin: 4px 0 0; color: var(--ink2); }
 
-.inbox { position: relative; width: 36px; height: 36px; margin-bottom: 4px; border-radius: 18px; background: var(--surface); display: flex; align-items: center; justify-content: center; }
-.inbox svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
-.badge { position: absolute; top: -3px; right: -3px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.badge { position: absolute; top: 2px; right: 4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 
 /* ---- Buttons and fields ---- */
 .btn { height: 48px; padding: 0 20px; border: none; border-radius: 24px; font-weight: 600; cursor: pointer; }
 .btn.accent, .pill.accent { background: var(--accent); color: var(--accent-ink); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 0.5px var(--line); }
+.btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.btn.accent { box-shadow: none; }
+.btn.big { width: 100%; height: 52px; border-radius: 26px; font-size: 17px; }
+.btn:active, .pill:active { transform: scale(0.98); }
 .btn.ghost { background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 0.5px var(--line); }
-.pill { height: 34px; padding: 0 14px; border: none; border-radius: 17px; font-size: 14px; font-weight: 600; cursor: pointer; flex: none; }
+.pill { height: 36px; padding: 0 16px; border: none; border-radius: 17px; font-size: 14px; font-weight: 600; cursor: pointer; flex: none; }
 .field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--ink2); }
 .field input { width: 100%; min-width: 0; height: 46px; padding: 0 12px; border: none; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 0.5px var(--line); font-size: 16px; font-weight: 400; color: var(--ink); }
-input::placeholder { color: rgba(242, 234, 219, 0.4); }
+input::placeholder { color: rgba(242, 234, 219, 0.5); }
+.field i { font-style: normal; font-weight: 400; opacity: 0.7; }
 
 /* ---- Make: the record card, with the disc sliding out behind it ---- */
 .hero { padding-top: 22px; }
@@ -66,8 +70,6 @@ input::placeholder { color: rgba(242, 234, 219, 0.4); }
 .card-text { flex: 1; min-width: 0; }
 .card-title { font-size: 17px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-sub { font-size: 14px; opacity: 0.75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.send-pill { height: 34px; padding: 0 14px; border: none; border-radius: 17px; background: #fff; color: #1c1c1e; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer; animation: rise 400ms 500ms both; }
-.send-pill svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linejoin: round; }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 /* ---- Paste ---- */
@@ -79,13 +81,9 @@ input::placeholder { color: rgba(242, 234, 219, 0.4); }
 .manual { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
 .hint { margin: 0; font-size: 13px; color: var(--ink2); }
 
-/* ---- Who it's for, and the ways to send ---- */
+/* ---- Who it's for, then one Send button ---- */
 .studio { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; animation: rise 420ms var(--ease) both; }
 .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.shortcuts { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; margin-top: 4px; }
-.sc { display: flex; flex-direction: column; align-items: center; gap: 5px; min-height: 64px; padding: 4px 0; border: none; background: none; font-size: 11px; color: var(--ink2); text-decoration: none; cursor: pointer; }
-.sc-dot { width: 44px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 16px; }
-.preview-link { align-self: center; font-size: 13px; color: var(--ink2); text-underline-offset: 3px; }
 
 /* ---- Recently Sent ---- */
 .recent { margin: 22px -20px 0 0; }
@@ -112,7 +110,7 @@ input::placeholder { color: rgba(242, 234, 219, 0.4); }
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 14px; }
 .rec { position: relative; display: flex; flex-direction: column; gap: 5px; text-decoration: none; color: var(--ink); animation: rise 400ms var(--ease) both; }
 .rec .tile-art { width: 100%; height: auto; aspect-ratio: 1; }
-.rec-remove { position: absolute; top: -8px; right: -8px; width: 28px; height: 28px; border: none; border-radius: 14px; background: var(--surface); box-shadow: 0 0 0 0.5px var(--line), 0 2px 6px rgba(0, 0, 0, 0.3); color: var(--ink); cursor: pointer; opacity: 0; transition: opacity 150ms; }
+.rec-remove { position: absolute; top: -10px; right: -10px; width: 32px; height: 32px; border: none; border-radius: 16px; background: var(--surface); box-shadow: 0 0 0 0.5px var(--line), 0 2px 6px rgba(0, 0, 0, 0.3); color: var(--ink); cursor: pointer; opacity: 0; transition: opacity 150ms; }
 .rec:hover .rec-remove, .rec-remove:focus-visible { opacity: 1; }
 @media (hover: none) { .rec-remove { opacity: 1; } }
 .empty { margin: 30px 0; text-align: center; color: var(--ink2); }
@@ -141,7 +139,7 @@ input::placeholder { color: rgba(242, 234, 219, 0.4); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
-  .disc-label { animation: none !important; }
+  .disc-label, .mini-disc { animation: none !important; }
 }
 
 /* ---- Email sign-in, at the foot of Records ---- */
@@ -153,3 +151,38 @@ input::placeholder { color: rgba(242, 234, 219, 0.4); }
 .ac-msg { min-height: 18px; margin: 8px 0 0 !important; font-size: 13px; }
 .ac-msg.error { color: var(--accent) !important; }
 .link { padding: 0; border: none; background: none; color: var(--accent); font-size: 13px; cursor: pointer; }
+
+/* ---- The name, with a small record spinning after it ---- */
+.brand { display: flex; align-items: center; gap: 10px; }
+.mini-disc { width: 26px; height: 26px; flex: none; border-radius: 50%;
+  background: radial-gradient(circle, #0a0a0b 0 7%, var(--accent) 8% 30%, #111113 31% 34%, transparent 35%), var(--groove);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 2px 6px rgba(0, 0, 0, 0.4); animation: spin 2.4s linear infinite; position: relative; }
+.mini-disc::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 30deg, transparent 0 40deg, rgba(255, 255, 255, 0.18) 60deg, transparent 80deg 220deg, rgba(255, 255, 255, 0.1) 240deg, transparent 260deg); }
+
+/* ---- While a link is being read ---- */
+.stage.loading .card-empty { animation: breathe 1.2s ease-in-out infinite; }
+.stage.loading .card-empty span::after { content: '…'; }
+@keyframes breathe { 50% { opacity: 0.45; } }
+.studio .btn.big { margin-top: 6px; }
+
+/* ---- Records tab badge: newly opened records ---- */
+.tab { position: relative; }
+
+/* ---- Send sheet: the phone's share list, or copy the link ---- */
+.sheet { width: min(440px, 100%); max-width: 100%; margin: auto auto 0; padding: 10px 20px calc(20px + env(safe-area-inset-bottom)); border: none; border-radius: 22px 22px 0 0; background: var(--surface); color: var(--ink); box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5); }
+.sheet[open] { animation: sheet-up 380ms var(--ease) both; }
+.sheet::backdrop { background: rgba(5, 12, 9, 0.6); backdrop-filter: blur(2px); }
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+@media (min-width: 600px) { .sheet { margin: auto; border-radius: 22px; padding-bottom: 20px; } .sheet-grip { display: none; } }
+.sheet-grip { width: 36px; height: 5px; margin: 0 auto 14px; border-radius: 3px; background: var(--line); }
+.sheet-head { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.sheet-art { width: 64px; height: 64px; flex: none; border-radius: 6px; background: var(--art); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4); }
+.sheet-text { min-width: 0; }
+.sheet-text h2 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+.sheet-text p { margin: 2px 0 0; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sheet-actions { display: flex; flex-direction: column; gap: 10px; }
+.sheet-actions .btn:not(.accent) { background: var(--bg); }
+.sheet-note { min-height: 20px; margin: 12px 0 0; text-align: center; font-size: 14px; color: var(--ink2); }
+.sheet-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+.sheet-foot .link { font-size: 15px; min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; }
+.tab[aria-current="page"] .badge { background: var(--ink); color: var(--bg); }
