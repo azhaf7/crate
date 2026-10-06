@@ -26,7 +26,9 @@
     const g = (k) => (h.get(k) || q.get(k) || '').trim();
     const sp = g('spotify');
     const ap = g('apple');
-    return { title: g('song') || 'Get Lucky', artist: g('by') || 'Daft Punk', from: g('from') || 'A friend', pet: g('pet'),
+    const song = g('song');
+    // The demo record only shows when the link carries no song at all; never invent an artist.
+    return { title: song || 'Get Lucky', artist: g('by') || (song ? '' : 'Daft Punk'), from: g('from') || 'A friend', pet: g('pet'),
              note: g('note').slice(0, 80),
              spotify: /^[A-Za-z0-9]{22}$/.test(sp) ? sp : '',
              apple: /^\d{4,15}$/.test(ap) ? ap : '',
@@ -227,7 +229,7 @@
     $('headline').textContent = params().note ? '“' + params().note + '”' : 'Now spinning';
     $('song').hidden = false;
     const p = params();
-    document.title = p.title + ' · ' + p.artist;
+    document.title = p.title + (p.artist ? ' · ' + p.artist : '');
     playPreview();
     paintPreview();
     reportOpen(p);
@@ -247,7 +249,7 @@
     $('appleLink').href = p.apple ? 'https://music.apple.com/song/' + p.apple : 'https://music.apple.com/search?term=' + q;
     if (p.note) $('headline').textContent = '“' + p.note + '”';
     showSaved(p);
-    document.title = opened ? p.title + ' · ' + p.artist : fromLine;
+    document.title = opened ? p.title + (p.artist ? ' · ' + p.artist : '') : fromLine;
     page.style.setProperty('--tint', FALLBACK_TINT);
     page.style.removeProperty('--art');
     loadArtwork(p);
