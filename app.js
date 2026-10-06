@@ -17,7 +17,7 @@
   const artOK = (u) => { try { const h = new URL(u); return h.protocol === 'https:' && /(^|\.)(scdn\.co|mzstatic\.com|spotifycdn\.com)$/.test(h.hostname); } catch (e) { return false; } };
   const big = (u) => (u || '').replace(/\/\d+x\d+bb\./, '/600x600bb.');
   const cssURL = (u) => 'url("' + u.replace(/["\\\n]/g, encodeURIComponent) + '")';
-  const artCSS = (u) => (u && artOK(u) ? 'center / cover no-repeat ' + cssURL(u) + ', ' : '') + 'linear-gradient(160deg, #3d5a4c, #182c24)';
+  const artCSS = (u) => (u && artOK(u) ? 'center / cover no-repeat ' + cssURL(u) + ', ' : '') + 'linear-gradient(150deg, oklch(0.72 0.12 40), oklch(0.42 0.1 80))';
   const idOf = (r) => (r.spotify || r.apple || (r.title + '|' + r.artist)).toLowerCase();
   // A record's own id: random, so only people holding the link know it.
   const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[b % 62]).join('');
@@ -558,19 +558,15 @@
     list.forEach((r, i) => shelf.appendChild(tile(r, 'tile', i)));
   }
 
-  let crateKind = 'received';
+  let crateKind = 'all';
   function renderCrate() {
-    const all = crate(), list = all.filter((r) => r.kind === crateKind);
+    document.dispatchEvent(new Event('crate:records'));
+    const all = crate(), list = crateKind === 'all' ? all : all.filter((r) => r.kind === crateKind);
     const received = all.filter((r) => r.kind === 'received').length, sentN = all.length - received;
-    $('crateCount').textContent = received + ' received · ' + sentN + ' sent';
-    $('segReceived').setAttribute('aria-selected', String(crateKind === 'received'));
-    $('segSent').setAttribute('aria-selected', String(crateKind === 'sent'));
+    $('crateCount').textContent = all.length + ' record' + (all.length === 1 ? '' : 's');
+    $('gridHead').textContent = crateKind === 'sent' ? 'All sent' : crateKind === 'received' ? 'All received' : 'All records';
     const grid = $('crateGrid');
     grid.textContent = '';
-    $('crateEmpty').hidden = list.length > 0;
-    $('crateEmpty').textContent = crateKind === 'received'
-      ? 'Records friends send you land here when you tap “Save in Crate”.'
-      : 'Records you send show up here, with whether they’ve been opened.';
     list.forEach((r, i) => {
       const a = tile(r, 'rec', i);
       const x = document.createElement('button');
@@ -635,11 +631,12 @@
     body.textContent = '';
     const card = (html) => { const d = document.createElement('div'); d.className = 'card'; d.innerHTML = html; body.appendChild(d); return d; };
     if (!spotifyOn()) {
-      card('<h2>Spotify library</h2><p>To list your liked songs and playlists here, add a Spotify Client ID to <code>config.js</code> (see the README). Pasting links works without it.</p>');
+      card('<div class="src"><i style="background:#1ed760"></i><div><h2>Spotify</h2><span>Not set up</span></div></div><p>To list your liked songs and playlists here, add a Spotify Client ID to <code>config.js</code> (see the README). Pasting links works without it.</p>');
     } else if (!store.get(SPOTIFY_TOKENS, null)) {
-      const c = card('<h2>Connect Spotify</h2><p>See your liked songs, recently played and playlists, and send any of them as a record. Crate only reads your library.</p><button class="btn spotify" type="button">Connect Spotify</button>');
+      const c = card('<div class="src"><i style="background:#1ed760"></i><div><h2>Spotify</h2><span>Not connected</span></div><button class="pill accent" type="button">Connect</button></div><p>See your liked songs, recently played and playlists, and send any of them as a record. Crate only reads your library.</p>');
       c.querySelector('button').addEventListener('click', connectSpotify);
     } else {
+      card('<div class="src"><i style="background:#1ed760"></i><div><h2>Spotify</h2><span>Connected</span></div></div>').classList.add('slim');
       const seg = document.createElement('div');
       seg.className = 'seg'; seg.setAttribute('role', 'tablist');
       [['liked', 'Liked'], ['recent', 'Recent'], ['playlists', 'Playlists']].forEach(([k, label]) => {
@@ -674,7 +671,8 @@
       out.addEventListener('click', () => { store.set(SPOTIFY_TOKENS, null); renderLibrary(); });
       body.appendChild(out);
     }
-    card('<h2>Apple Music library</h2><p>Coming later: reading an Apple Music library needs an Apple developer account. You can paste Apple Music links today.</p>');
+    card('<div class="src"><i style="background:#fa2d48"></i><div><h2>Apple Music</h2><span>Coming soon</span></div></div><p>Reading an Apple Music library needs an Apple developer account. You can paste Apple Music links today.</p>');
+    card('<div class="src"><i style="background:#0a84ff"></i><div><h2>Shazam</h2><span>Through Apple Music</span></div></div><p>Shazam doesn’t let other apps read its history. Turn on <b>Shazam → Settings → Sync to Apple Music</b> and your Shazams show up as a “My Shazam Tracks” playlist, ready once Apple Music connects here. You can paste a Shazam song’s Apple Music link today.</p>');
   }
   function row(title, sub, img, onClick) {
     const b = document.createElement('button'); b.className = 'row'; b.type = 'button';
@@ -688,7 +686,7 @@
   // ---------- Routing ----------
   function route() {
     const h = location.hash.replace(/^#\/?/, '').split('?')[0];
-    const view = h.startsWith('records') ? 'crate' : h === 'library' && spotifyOn() ? 'library' : 'make';
+    const view = h.startsWith('records') ? 'crate' : h === 'library' ? 'library' : 'make';
     if (h === 'records/sent') crateKind = 'sent';
     if (h === 'records/received') crateKind = 'received';
     ['make', 'crate', 'library'].forEach((v) => { $('view-' + v).hidden = v !== view; });
@@ -699,13 +697,11 @@
     if (view === 'library') renderLibrary();
     if (view === 'make') renderRecent();
     window.scrollTo(0, 0);
+    document.dispatchEvent(new CustomEvent('crate:view', { detail: view }));
   }
 
-  $('segReceived').addEventListener('click', () => { crateKind = 'received'; renderCrate(); });
-  $('segSent').addEventListener('click', () => { crateKind = 'sent'; renderCrate(); });
   wireMake();
   // Library needs a Spotify app; without one the tab would only explain that, so it's left out.
-  $('tabLibrary').hidden = !spotifyOn();
   window.addEventListener('hashchange', route);
   window.addEventListener('storage', (e) => { if (e.key === CRATE && !$('view-crate').hidden) renderCrate(); });
   // Statuses on launch, and whenever Crate comes back to the front.
@@ -719,5 +715,11 @@
     route();
     if (incoming) { history.replaceState(null, '', location.pathname); $('link').value = incoming; makeFrom(incoming); }
   });
+  // The sleeve stack on Records (stack.js) uses these.
+  window.CrateApp = {
+    crate, artCSS, artOK, shareURL, showRecord,
+    kind: () => crateKind, setKind: (k) => { crateKind = k; renderCrate(); },
+  };
+  document.dispatchEvent(new Event('crate:ready'));
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();

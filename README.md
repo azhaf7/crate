@@ -75,6 +75,7 @@ connect; ask Spotify for an extension to open it to everyone.
 
 ```
 index.html, app.css, app.js   The app: Make, Records, Library
+stack.js, stack.css           The sleeve stack on Records, the Library source cards
 r/                            The record page friends open (same motion as Vinyl Player's)
 config.js                     Supabase URL + anon key, Spotify Client ID (optional)
 supabase/schema.sql           The database: records, who can see them, open receipts
