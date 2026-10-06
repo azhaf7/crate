@@ -290,7 +290,6 @@
     $('scWhatsApp').href = 'https://wa.me/?text=' + encodeURIComponent(both);
     $('scTelegram').href = 'https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text);
     $('scEmail').href = 'mailto:?subject=' + encodeURIComponent(text) + '&body=' + encodeURIComponent(both);
-    $('scX').href = 'https://x.com/intent/post?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url);
     $('previewLink').href = url;
   }
 
@@ -335,7 +334,8 @@
                                    spotify: link.kind === 'spotify' ? link.id : '', apple: link.kind === 'apple' ? link.id : '' }));
     });
     ['from', 'to', 'note'].forEach((id) => $(id).addEventListener('input', updateShare));
-    $('sendBtn').addEventListener('click', async () => {
+    // Send and More both open the phone's share sheet; without one, Send copies the link.
+    const shareSheet = async () => {
       if (!current) return;
       updateShare();
       const url = shareURL(current);
@@ -345,8 +345,11 @@
       } else {
         copy(url); sent(); setStatus('Link copied. Paste it to your friend.');
       }
-    });
-    ['scMessages', 'scWhatsApp', 'scTelegram', 'scEmail', 'scX'].forEach((id) => $(id).addEventListener('click', sent));
+    };
+    $('sendBtn').addEventListener('click', shareSheet);
+    $('scMore').hidden = !navigator.share;
+    $('scMore').addEventListener('click', shareSheet);
+    ['scMessages', 'scWhatsApp', 'scTelegram', 'scEmail'].forEach((id) => $(id).addEventListener('click', sent));
     $('scCopy').addEventListener('click', () => { updateShare(); copy(shareURL(current)); sent(); });
   }
 

@@ -82,7 +82,7 @@ input::placeholder { color: rgba(242, 234, 219, 0.4); }
 /* ---- Who it's for, and the ways to send ---- */
 .studio { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; animation: rise 420ms var(--ease) both; }
 .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.shortcuts { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; margin-top: 4px; }
+.shortcuts { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; margin-top: 4px; }
 .sc { display: flex; flex-direction: column; align-items: center; gap: 5px; min-height: 64px; padding: 4px 0; border: none; background: none; font-size: 11px; color: var(--ink2); text-decoration: none; cursor: pointer; }
 .sc-dot { width: 44px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 16px; }
 .preview-link { align-self: center; font-size: 13px; color: var(--ink2); text-underline-offset: 3px; }
