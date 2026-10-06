@@ -1,4 +1,4 @@
-// Crate: paste a Spotify or Apple Music link, get a sealed record to send. Records you open or send
+#// Crate: paste a Spotify or Apple Music link, get a sealed record to send. Records you open or send
 // are kept on this device. With Spotify connected, the Library lists your own music.
 (() => {
   'use strict';
@@ -82,15 +82,20 @@
   }
 
   // Spotify's public embed info has the title and cover; the artist comes from Apple's catalogue.
-  function viaSpotify(id) {
-    return fetchJSON('https://open.spotify.com/oembed?url=' + encodeURIComponent('https://open.spotify.com/track/' + id)).then((o) => {
-      if (!o.title) throw new Error('no title');
-      return itunes('search?media=music&entity=song&limit=5&term=' + encodeURIComponent(o.title)).then((j) => {
-        const r = (j.results || [])[0];
-        return { title: o.title, artist: r ? r.artistName : '', art: o.thumbnail_url || (r ? big(r.artworkUrl100) : ''), spotify: id, apple: r ? String(r.trackId) : '' };
-      }, () => ({ title: o.title, artist: '', art: o.thumbnail_url || '', spotify: id, apple: '' }));
-    });
-  }
+function viaSpotify(id) {
+  return fetchJSON('https://open.spotify.com/oembed?url=' + encodeURIComponent('https://open.spotify.com/track/' + id)).then((o) => {
+    if (!o.title) throw new Error('no title');
+    const want = o.title.toLowerCase();
+    const none = { title: o.title, artist: '', art: o.thumbnail_url || '', spotify: id, apple: '' };
+    return itunes('search?media=music&entity=song&limit=25&term=' + encodeURIComponent(o.title)).then((j) => {
+      // Only trust a result whose title actually matches; never take the first hit blindly.
+      const r = (j.results || []).find((x) => (x.trackName || '').toLowerCase() === want);
+      if (!r) return none;
+      return { title: o.title, artist: r.artistName, art: o.thumbnail_url || big(r.artworkUrl100), spotify: id, apple: String(r.trackId) };
+    }, () => none);
+  });
+}
+
 
   // A cover from Apple for songs typed in by hand or missing one.
   function findCover(rec) {
