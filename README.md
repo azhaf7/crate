@@ -1,3 +1,5 @@
+<p align="center"><img src="icon-512.png" width="128" alt="Crate icon"></p>
+
 # Crate
 
 Send songs to friends as vinyl records.
