@@ -1,13 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#efece7"/>
-  <circle cx="296" cy="256" r="150" fill="#141416"/>
-  <circle cx="296" cy="256" r="150" fill="none" stroke="#26262b" stroke-width="2" stroke-dasharray="1 5"/>
-  <circle cx="296" cy="256" r="122" fill="none" stroke="#202024" stroke-width="1.5"/>
-  <circle cx="296" cy="256" r="98" fill="none" stroke="#202024" stroke-width="1.5"/>
-  <circle cx="296" cy="256" r="52" fill="#e5484d"/>
-  <circle cx="296" cy="256" r="6" fill="#efece7"/>
-  <rect x="78" y="106" width="300" height="300" rx="10" fill="#edcb86"/>
-  <rect x="78" y="106" width="300" height="300" rx="10" fill="url(#g)"/>
-  <text x="106" y="372" font-family="Bricolage Grotesque, Helvetica, Arial, sans-serif" font-weight="800" font-size="104" fill="#141210" letter-spacing="-4">crate</text>
-  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".12"/></linearGradient></defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+<defs>
+  <radialGradient id="bg" cx="50%" cy="30%" r="80%"><stop offset="0" stop-color="#21412F"/><stop offset="1" stop-color="#0F1F19"/></radialGradient>
+  <filter id="sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#000" flood-opacity="0.45"/></filter><filter id="sh2" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#000" flood-opacity="0.4"/></filter>
+</defs>
+<rect width="1024" height="1024" fill="url(#bg)"/>
+<g filter="url(#sh2)">
+  <circle cx="660" cy="512" r="250" fill="#0d0d10"/>
+  <circle cx="660" cy="512" r="235" fill="none" stroke="#2a2a30" stroke-width="3"/><circle cx="660" cy="512" r="215" fill="none" stroke="#2a2a30" stroke-width="3"/><circle cx="660" cy="512" r="195" fill="none" stroke="#2a2a30" stroke-width="3"/><circle cx="660" cy="512" r="175" fill="none" stroke="#2a2a30" stroke-width="3"/><circle cx="660" cy="512" r="155" fill="none" stroke="#2a2a30" stroke-width="3"/><circle cx="660" cy="512" r="135" fill="none" stroke="#2a2a30" stroke-width="3"/><circle cx="660" cy="512" r="115" fill="none" stroke="#2a2a30" stroke-width="3"/>
+  <path d="M 660 512 L 738.8305905988171 274.7538451611034 A 250 250 0 0 1 842.9222172184552 341.59030999416643 Z" fill="#ffffff" opacity="0.10"/>
+  <path d="M 660 512 L 579.1776082841242 748.5750219218536 A 250 250 0 0 1 493.430994680044 698.42630304418 Z" fill="#ffffff" opacity="0.06"/>
+  <circle cx="660" cy="512" r="90" fill="#FF5A36"/>
+  <circle cx="660" cy="512" r="67.5" fill="none" stroke="#13261F" stroke-width="6.25"/>
+  <circle cx="660" cy="512" r="8.75" fill="#0a0a0b"/></g>
+<g filter="url(#sh)">
+  <rect x="122" y="262" width="500" height="500" rx="16" fill="#F2EADB"/>
+  <circle cx="530" cy="370" r="56" fill="#FF5A36"/>
+  <text x="156" y="712" font-family="'Helvetica Neue', Helvetica, Arial, 'Liberation Sans', sans-serif" font-weight="800" font-size="158" letter-spacing="-7" fill="#13261F">crate</text>
+</g>
 </svg>
