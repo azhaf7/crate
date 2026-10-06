@@ -198,3 +198,13 @@ a:hover { color: oklch(0.92 0.06 70); }
 }
 .save:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.7); outline-offset: 3px; }
 .save[data-saved="true"] { background: rgba(255, 255, 255, 0.12); color: #fff; box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.2) inset; }
+
+/* Preview: a small pill that plays Apple's 30-second clip, with its progress underneath. */
+.preview { position: relative; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 16px 0 12px; border: none; border-radius: 18px; overflow: hidden; background: rgba(255, 255, 255, 0.12); box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.2) inset; color: #fff; font: 600 14px -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif; cursor: pointer; animation: preview-in 400ms var(--ease-slide) both; }
+.preview:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.7); outline-offset: 3px; }
+.preview-icon { width: 12px; height: 12px; background: #fff; clip-path: polygon(10% 0, 100% 50%, 10% 100%); }
+.preview[aria-pressed="true"] .preview-icon { clip-path: none; background: linear-gradient(90deg, #fff 0 35%, transparent 35% 65%, #fff 65%); }
+.preview[hidden] { display: none; }
+.preview-track { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(255, 255, 255, 0.12); }
+.preview-track i { display: block; height: 100%; background: #fff; transform: scaleX(0); transform-origin: left; transition: transform 250ms linear; }
+@keyframes preview-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }

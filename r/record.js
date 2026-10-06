@@ -1,8 +1,8 @@
 // Crate record page: a song sent as a sealed vinyl sleeve. Tap to open, the record slides out and spins.
-// Link format: r/#song=<title>&by=<artist>&from=<sender>&note=<note>&art=<cover>&spotify=<id>&apple=<id>
-// (the same fields as Vinyl Player's share links, so links from the Mac app open here too)
-// (query-string parameters are read as a fallback). Artwork lookup, tint and needle-drop
-// sound follow design/vinyl-shared.js so this page matches the player.
+// Link format: r/#song=<title>&by=<artist>&from=<sender>&note=<note>&art=<cover>&spotify=<id>&apple=<id>&id=<record>
+// (the same fields as Vinyl Player's share links, so links from the Mac app open here too;
+// query-string parameters are read as a fallback). Opening plays Apple's 30-second preview and,
+// when the link has a record id, tells the sender it was opened.
 (() => {
   'use strict';
 
@@ -30,6 +30,7 @@
              note: g('note').slice(0, 80),
              spotify: /^[A-Za-z0-9]{22}$/.test(sp) ? sp : '',
              apple: /^\d{4,15}$/.test(ap) ? ap : '',
+             rid: /^[A-Za-z0-9]{12}$/.test(g('id')) ? g('id') : '',
              art: artOK(g('art')) ? g('art') : '' };
   }
 
@@ -124,21 +125,86 @@
       .catch(() => { /* offline: the abstract fallback art stays */ });
   }
 
-  // ---- Needle drop: 90→38 Hz sine thump + band-passed noise tick ----
-  function needleDrop() {
-    const A = window.AudioContext || window.webkitAudioContext;
-    if (!A) return;
-    const c = new A(), t = c.currentTime;
-    const o = c.createOscillator(), g = c.createGain();
-    o.frequency.setValueAtTime(90, t); o.frequency.exponentialRampToValueAtTime(38, t + 0.14);
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.22, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-    o.connect(g).connect(c.destination); o.start(t); o.stop(t + 0.2);
-    const n = c.createBufferSource(), buf = c.createBuffer(1, c.sampleRate * 0.08, c.sampleRate), ch = buf.getChannelData(0);
-    for (let k = 0; k < ch.length; k++) ch[k] = (Math.random() * 2 - 1) * Math.pow(1 - k / ch.length, 3);
-    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2400; bp.Q.value = 0.8;
-    const ng = c.createGain(); ng.gain.value = 0.12;
-    n.buffer = buf; n.connect(bp).connect(ng).connect(c.destination); n.start(t);
-    setTimeout(() => c.close && c.close(), 600);
+  // ---- Preview: Apple's 30-second clip, found while the sleeve is still sealed ----
+  // It's fetched on load so the tap that opens the record can start it straight away: phones only
+  // allow sound to start inside a tap.
+  function itunes(path) {
+    const url = 'https://itunes.apple.com/' + path;
+    return fetch(url).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); }).catch(() => new Promise((resolve, reject) => {
+      const cb = 'crateCb' + Math.random().toString(36).slice(2), s = document.createElement('script');
+      const done = (v, err) => { delete window[cb]; s.remove(); err ? reject(err) : resolve(v); };
+      window[cb] = (j) => done(j);
+      s.onerror = () => done(null, new Error('jsonp'));
+      s.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb;
+      document.head.appendChild(s);
+      setTimeout(() => window[cb] && done(null, new Error('timeout')), 8000);
+    }));
+  }
+
+  const audio = new Audio();
+  audio.preload = 'auto';
+  let previewFor = '';
+  function findPreview(p) {
+    const key = keyOf(p);
+    if (previewFor === key) return;
+    previewFor = key;
+    audio.pause(); audio.removeAttribute('src');
+    paintPreview();
+    const pick = (j) => {
+      const rs = (j && j.results) || [];
+      return (p.apple && rs.find((x) => String(x.trackId) === p.apple)) || pickResult(rs, p) || null;
+    };
+    const look = p.apple ? itunes('lookup?entity=song&id=' + p.apple).then(pick) : Promise.resolve(null);
+    look.then((r) => r || itunes('search?media=music&entity=song&limit=25&term=' + encodeURIComponent(p.title + ' ' + p.artist)).then(pick))
+      .then((r) => {
+        if (previewFor !== key || !r || !r.previewUrl || !/^https:\/\//.test(r.previewUrl)) return;
+        audio.src = r.previewUrl;
+        audio.load();
+        paintPreview();
+      })
+      .catch(() => { /* no preview: the record still opens and spins */ });
+  }
+
+  function playPreview() {
+    if (!audio.getAttribute('src')) return;
+    audio.play().catch(() => paintPreview());
+  }
+
+  function paintPreview() {
+    const b = $('previewBtn'), has = !!audio.getAttribute('src');
+    b.hidden = !opened || !has;
+    const playing = !audio.paused && !audio.ended;
+    b.setAttribute('aria-pressed', String(playing));
+    b.setAttribute('aria-label', playing ? 'Pause preview' : 'Play preview');
+    $('previewLabel').textContent = playing ? 'Playing preview' : audio.ended ? 'Play again' : 'Play preview';
+  }
+  ['play', 'pause', 'ended'].forEach((ev) => audio.addEventListener(ev, paintPreview));
+  audio.addEventListener('timeupdate', () => {
+    $('previewBar').style.transform = 'scaleX(' + (audio.duration ? audio.currentTime / audio.duration : 0) + ')';
+  });
+  $('previewBtn').addEventListener('click', () => {
+    if (!audio.paused && !audio.ended) audio.pause();
+    else { if (audio.ended) audio.currentTime = 0; audio.play().catch(() => {}); }
+  });
+
+  // ---- Telling the sender it was opened ----
+  // Once per device, and never for the sender's own copy. Nothing about who opened it is sent.
+  const cfg = window.CRATE || {};
+  function reportOpen(p) {
+    if (!p.rid || !cfg.supabaseUrl || !cfg.supabaseAnonKey) return;
+    const read = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } };
+    if (readCrate().some((r) => r.kind === 'sent' && r.rid === p.rid)) return;
+    const done = read('crate-opened', []);
+    if (done.includes(p.rid)) return;
+    const me = read('crate-auth', null), token = me && me.access && Date.now() < me.until ? me.access : cfg.supabaseAnonKey;
+    fetch(cfg.supabaseUrl + '/rest/v1/rpc/open_record', {
+      method: 'POST', keepalive: true,
+      headers: { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rid: p.rid }),
+    }).then((r) => {
+      if (!r.ok) return;
+      try { localStorage.setItem('crate-opened', JSON.stringify([p.rid].concat(done).slice(0, 300))); } catch (e) {}
+    }).catch(() => {});
   }
 
   // ---- Spin: velocity eases toward 33⅓ rpm; the angle only ever accumulates ----
@@ -162,7 +228,9 @@
     $('song').hidden = false;
     const p = params();
     document.title = p.title + ' · ' + p.artist;
-    needleDrop();
+    playPreview();
+    paintPreview();
+    reportOpen(p);
     last = performance.now();
     if (!raf) raf = requestAnimationFrame(tick);
   }
@@ -183,6 +251,7 @@
     page.style.setProperty('--tint', FALLBACK_TINT);
     page.style.removeProperty('--art');
     loadArtwork(p);
+    findPreview(p);
   }
 
   // ---- Save in Crate: the friend's own crate, kept on this device ----

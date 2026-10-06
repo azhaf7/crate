@@ -17,8 +17,10 @@
   const artOK = (u) => { try { const h = new URL(u); return h.protocol === 'https:' && /(^|\.)(scdn\.co|mzstatic\.com|spotifycdn\.com)$/.test(h.hostname); } catch (e) { return false; } };
   const big = (u) => (u || '').replace(/\/\d+x\d+bb\./, '/600x600bb.');
   const cssURL = (u) => 'url("' + u.replace(/["\\\n]/g, encodeURIComponent) + '")';
-  const artCSS = (u) => (u && artOK(u) ? 'center / cover no-repeat ' + cssURL(u) + ', ' : '') + 'linear-gradient(160deg, #c9b79c, #6f5e48)';
+  const artCSS = (u) => (u && artOK(u) ? 'center / cover no-repeat ' + cssURL(u) + ', ' : '') + 'linear-gradient(160deg, #3d5a4c, #182c24)';
   const idOf = (r) => (r.spotify || r.apple || (r.title + '|' + r.artist)).toLowerCase();
+  // A record's own id: random, so only people holding the link know it.
+  const newId = () => Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[b % 62]).join('');
 
   function fetchJSON(url, ms = 8000) {
     const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
@@ -117,43 +119,162 @@
     const e = new Error('Couldn’t read that link.'); e.manual = link; throw e;
   }
 
+  // ---------- Database: has the record been opened? ----------
+  // Each browser that sends a record gets an anonymous Supabase identity (no account, no email).
+  // Writes are fire-and-forget: the link carries the whole song, so a record opens even when the
+  // database can't be reached, and unsent rows are retried next time.
+  const AUTH = 'crate-auth', STATUS = 'crate-status';
+  const dbOn = () => !!(cfg.supabaseUrl && cfg.supabaseAnonKey);
+  let authing = null;
+
+  async function authCall(path, body) {
+    const r = await fetch(cfg.supabaseUrl + '/auth/v1/' + path, { method: 'POST',
+      headers: { apikey: cfg.supabaseAnonKey, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!r.ok) throw Object.assign(new Error('auth ' + r.status), { status: r.status });
+    const j = await r.json();
+    const a = { access: j.access_token, refresh: j.refresh_token, until: Date.now() + ((j.expires_in || 3600) - 60) * 1000 };
+    store.set(AUTH, a);
+    return a;
+  }
+  function session() {
+    const a = store.get(AUTH, null);
+    if (a && a.access && Date.now() < a.until) return Promise.resolve(a);
+    if (!authing) {
+      // A refresh token that's been revoked means a new identity; a network error just waits for next time.
+      authing = (a && a.refresh
+        ? authCall('token?grant_type=refresh_token', { refresh_token: a.refresh }).catch((e) => { if (e.status >= 400 && e.status < 500) return authCall('signup', {}); throw e; })
+        : authCall('signup', {})).finally(() => { authing = null; });
+    }
+    return authing;
+  }
+  async function db(method, path, body, prefer) {
+    const a = await session();
+    const headers = { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + a.access, 'Content-Type': 'application/json' };
+    if (prefer) headers.Prefer = prefer;
+    const r = await fetch(cfg.supabaseUrl + '/rest/v1/' + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+    if (r.status === 401) store.set(AUTH, Object.assign(a, { until: 0 }));
+    if (!r.ok) throw new Error('db ' + r.status);
+    return method === 'GET' ? r.json() : null;
+  }
+
+  const dbRow = (r) => ({ id: r.rid, sender_name: (r.from || '').slice(0, 40) || null, to_name: (r.to || '').slice(0, 40) || null,
+    title: r.title.slice(0, 200), artist: (r.artist || '').slice(0, 200), note: (r.note || '').slice(0, 80) || null,
+    art: artOK(r.art) ? r.art : null, spotify: /^[A-Za-z0-9]{22}$/.test(r.spotify) ? r.spotify : null,
+    apple: /^\d{4,15}$/.test(r.apple) ? r.apple : null });
+
+  async function syncSent() {
+    const todo = crate().filter((r) => r.kind === 'sent' && r.rid && !r.synced);
+    if (!dbOn() || !todo.length) return;
+    await db('POST', 'records', todo.map(dbRow), 'resolution=ignore-duplicates,return=minimal');
+    const done = new Set(todo.map((r) => r.rid));
+    store.set(CRATE, crate().map((r) => (r.kind === 'sent' && done.has(r.rid) ? Object.assign(r, { synced: true }) : r)));
+  }
+
+  // Only browsers that have sent something talk to the database.
+  async function refreshStatus() {
+    if (!dbOn() || !crate().some((r) => r.kind === 'sent' && r.rid)) return;
+    try {
+      await syncSent();
+      const rows = await db('GET', 'records?select=id,opened_at,opens,seen_at&order=created_at.desc&limit=500');
+      const st = {};
+      rows.forEach((r) => { st[r.id] = { opened: r.opened_at, opens: r.opens, seen: r.seen_at }; });
+      store.set(STATUS, st);
+      paintStatus();
+    } catch (e) { /* offline: keep the last known statuses */ }
+  }
+  const statusOf = (r) => (r.rid && store.get(STATUS, {})[r.rid]) || null;
+  const isNew = (r) => { const s = statusOf(r); return !!(s && s.opened && !s.seen); };
+  const stateText = (r) => { const s = statusOf(r); return s && s.opened ? 'Opened' : r.rid ? 'Sealed' : 'Sent'; };
+  const newOpens = () => crate().filter((r) => r.kind === 'sent' && isNew(r));
+
+  // Looking at Sent counts as seeing who opened what.
+  function markSeen() {
+    const ids = newOpens().map((r) => r.rid);
+    if (!ids.length) return;
+    const now = new Date().toISOString(), st = store.get(STATUS, {});
+    ids.forEach((id) => { st[id].seen = now; });
+    store.set(STATUS, st);
+    paintBadge();
+    db('PATCH', 'records?id=in.(' + ids.join(',') + ')', { seen_at: now }, 'return=minimal').catch(() => {});
+  }
+
+  function paintBadge() {
+    const n = newOpens().length, b = $('inboxBadge');
+    b.hidden = !n;
+    b.textContent = n > 9 ? '9+' : String(n);
+    $('inbox').setAttribute('aria-label', n ? n + (n === 1 ? ' record' : ' records') + ' opened since you last looked' : 'Your records');
+  }
+  function paintStatus() {
+    paintBadge();
+    renderRecent();
+    if (!$('view-crate').hidden) renderCrate();
+  }
+
   // ---------- Share link ----------
   const recordBase = () => new URL('r/', location.origin + location.pathname).href;
   function shareURL(rec) {
     const fields = [['song', rec.title], ['by', rec.artist], ['from', rec.from || 'A friend'], ['note', rec.note],
-                    ['art', artOK(rec.art) ? rec.art : ''], ['spotify', rec.spotify], ['apple', rec.apple]];
+                    ['art', artOK(rec.art) ? rec.art : ''], ['spotify', rec.spotify], ['apple', rec.apple], ['id', rec.rid]];
     return recordBase() + '#' + fields.filter(([, v]) => v).map(([k, v]) => k + '=' + encodeURIComponent(v)).join('&');
   }
   const shareText = (rec) => (rec.from ? rec.from : 'Someone') + ' sent you a record' + (rec.note ? ': “' + rec.note + '”' : '') + ' 🎧';
 
   // ---------- Crate ----------
   const crate = () => store.get(CRATE, []);
+  // Sent records are one entry per link (rid); received ones one per song.
   function keep(rec, kind) {
-    const list = crate(), id = idOf(rec);
-    const i = list.findIndex((r) => r.kind === kind && r.id === id);
-    const entry = { id, kind, title: rec.title, artist: rec.artist, art: rec.art || '', spotify: rec.spotify || '', apple: rec.apple || '',
-                    from: rec.from || '', note: rec.note || '', at: Date.now() };
-    if (i >= 0) list.splice(i, 1);
-    list.unshift(entry);
-    store.set(CRATE, list.slice(0, 500));
+    const list = crate(), id = idOf(rec), same = (r) => r.kind === kind && (kind === 'sent' && rec.rid ? r.rid === rec.rid : r.id === id);
+    const old = list.find(same) || {};
+    const entry = { id, kind, rid: rec.rid || '', title: rec.title, artist: rec.artist, art: rec.art || '', spotify: rec.spotify || '', apple: rec.apple || '',
+                    from: rec.from || '', to: rec.to || '', note: rec.note || '', at: Date.now(),
+                    // Name or note changed since the row was written: the database keeps the first version.
+                    synced: !!old.synced };
+    store.set(CRATE, [entry].concat(list.filter((r) => !same(r))).slice(0, 500));
   }
 
   // ---------- Make screen ----------
   let current = null;
 
+  // The card's band takes the cover's own colour, darkened so white text reads on it.
+  function bandFrom(url) {
+    $('makeCard').style.background = '';
+    if (!artOK(url)) return;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas'); c.width = c.height = 24;
+        const x = c.getContext('2d'); x.drawImage(img, 0, 0, 24, 24);
+        const d = x.getImageData(0, 0, 24, 24).data;
+        let r = 0, g = 0, b = 0, w = 0;
+        for (let p = 0; p < d.length; p += 4) {
+          const mx = Math.max(d[p], d[p + 1], d[p + 2]), mn = Math.min(d[p], d[p + 1], d[p + 2]);
+          const wt = (mx ? (mx - mn) / mx : 0) ** 2 + 0.05;
+          r += d[p] * wt; g += d[p + 1] * wt; b += d[p + 2] * wt; w += wt;
+        }
+        const k = 0.32 / w;
+        if (current && current.art === url) $('makeCard').style.background = 'rgb(' + [r, g, b].map((v) => Math.round(v * k)).join(',') + ')';
+      } catch (e) { /* cover server didn't allow reading pixels: keep the plain card */ }
+    };
+    img.src = url;
+  }
+
   function showRecord(rec) {
-    current = rec;
+    current = Object.assign({}, rec, { rid: newId() });
     const art = artCSS(rec.art);
-    $('makeSleeve').style.background = art;
+    $('makeArt').style.background = art;
     $('makeLabel').style.background = art;
-    $('makeStage').classList.add('ready');
-    const st = $('makeSticker');
-    st.textContent = 'Tap to open';
-    st.classList.remove('slap'); void st.offsetWidth; st.classList.add('slap');
+    $('makeEmpty').hidden = true;
+    const stg = $('makeStage');
+    stg.classList.remove('ready', 'pop'); void stg.offsetWidth; stg.classList.add('ready', 'pop');
+    bandFrom(rec.art);
+    $('hero-title').textContent = 'Ready to Send';
     $('sTitle').textContent = rec.title;
-    $('sArtist').textContent = rec.artist;
+    $('sArtist').textContent = rec.artist || ' ';
+    $('sendBtn').hidden = false;
     $('studio').hidden = false;
     $('manual').hidden = true;
+    $('link').value = '';
     setStatus('');
     updateShare();
   }
@@ -161,6 +282,7 @@
   function updateShare() {
     if (!current) return;
     current.from = $('from').value.trim();
+    current.to = $('to').value.trim();
     current.note = $('note').value.trim();
     store.set(FROM, current.from);
     const url = shareURL(current), text = shareText(current), both = text + '\n' + url;
@@ -180,7 +302,6 @@
   async function makeFrom(text) {
     if (!text.trim()) return;
     setStatus('Finding the song…');
-    $('studio').hidden = true;
     try {
       showRecord(await resolve(text));
     } catch (e) {
@@ -190,7 +311,12 @@
     }
   }
 
-  function sent() { if (current) keep(current, 'sent'); }
+  function sent() {
+    if (!current) return;
+    keep(current, 'sent');
+    renderRecent();
+    refreshStatus();
+  }
 
   function wireMake() {
     $('from').value = store.get(FROM, '');
@@ -208,16 +334,16 @@
       showRecord(await findCover({ title: $('mTitle').value.trim(), artist: $('mArtist').value.trim(), art: '',
                                    spotify: link.kind === 'spotify' ? link.id : '', apple: link.kind === 'apple' ? link.id : '' }));
     });
-    ['from', 'note'].forEach((id) => $(id).addEventListener('input', updateShare));
+    ['from', 'to', 'note'].forEach((id) => $(id).addEventListener('input', updateShare));
     $('sendBtn').addEventListener('click', async () => {
       if (!current) return;
       updateShare();
       const url = shareURL(current);
       if (navigator.share) {
-        try { await navigator.share({ title: current.title + ' · ' + current.artist, text: shareText(current), url }); sent(); setStatus('Sent. It’s in your records.'); }
+        try { await navigator.share({ title: current.title + ' · ' + current.artist, text: shareText(current), url }); sent(); setStatus('Sent. You’ll see here when it’s opened.'); }
         catch (e) { /* closed the share sheet */ }
       } else {
-        copy(url); sent();
+        copy(url); sent(); setStatus('Link copied. Paste it to your friend.');
       }
     });
     ['scMessages', 'scWhatsApp', 'scTelegram', 'scEmail', 'scX'].forEach((id) => $(id).addEventListener('click', sent));
@@ -235,6 +361,37 @@
   }
 
   // ---------- Crate screen ----------
+  // One sleeve with its record peeking out: the shelf on Make and the Records grid both use it.
+  function tile(r, cls, i) {
+    const a = document.createElement('a');
+    a.className = cls;
+    a.href = shareURL(r);
+    a.target = '_blank'; a.rel = 'noopener';
+    a.style.animationDelay = Math.min(i, 8) * 60 + 'ms';
+    a.innerHTML = '<div class="tile-art"><div class="sleeve-disc"></div><div class="sleeve-art"></div></div><div class="' + cls + '-title"></div><div class="' + cls + '-meta"></div>';
+    a.querySelector('.sleeve-art').style.background = artCSS(r.art);
+    a.querySelector('.' + cls + '-title').textContent = r.title;
+    const meta = a.querySelector('.' + cls + '-meta');
+    if (r.kind === 'sent') {
+      const state = document.createElement('span');
+      state.textContent = stateText(r);
+      if (isNew(r)) state.className = 'opened';
+      meta.append((r.to ? 'To ' + r.to : r.artist) + ' · ', state);
+      a.setAttribute('aria-label', r.title + (r.to ? ', to ' + r.to : '') + ', ' + state.textContent);
+    } else {
+      meta.textContent = r.artist + (r.from ? ' · from ' + r.from : '');
+      a.setAttribute('aria-label', r.title + ' by ' + r.artist + (r.from ? ', from ' + r.from : ''));
+    }
+    return a;
+  }
+
+  function renderRecent() {
+    const list = crate().filter((r) => r.kind === 'sent').slice(0, 12), shelf = $('recentShelf');
+    $('recent').hidden = !list.length;
+    shelf.textContent = '';
+    list.forEach((r, i) => shelf.appendChild(tile(r, 'tile', i)));
+  }
+
   let crateKind = 'received';
   function renderCrate() {
     const all = crate(), list = all.filter((r) => r.kind === crateKind);
@@ -247,23 +404,23 @@
     $('crateEmpty').hidden = list.length > 0;
     $('crateEmpty').textContent = crateKind === 'received'
       ? 'Records friends send you land here when you tap “Save in Crate”.'
-      : 'Records you send show up here.';
-    for (const r of list) {
-      const a = document.createElement('a');
-      a.className = 'rec';
-      a.href = shareURL(r);
-      a.setAttribute('aria-label', r.title + ' by ' + r.artist + (r.from && crateKind === 'received' ? ', from ' + r.from : ''));
-      a.innerHTML = '<div class="rec-art"><div class="rec-disc"></div><div class="rec-sleeve"></div></div><div class="rec-title"></div><div class="rec-meta"></div><button class="rec-remove" type="button" aria-label="Remove">×</button>';
-      a.querySelector('.rec-sleeve').style.background = artCSS(r.art);
-      a.querySelector('.rec-title').textContent = r.title;
-      a.querySelector('.rec-meta').textContent = r.artist + (crateKind === 'received' && r.from ? ' · from ' + r.from : '');
-      a.querySelector('.rec-remove').addEventListener('click', (e) => {
+      : 'Records you send show up here, with whether they’ve been opened.';
+    list.forEach((r, i) => {
+      const a = tile(r, 'rec', i);
+      const x = document.createElement('button');
+      x.className = 'rec-remove'; x.type = 'button'; x.textContent = '×';
+      x.setAttribute('aria-label', 'Remove ' + r.title);
+      x.addEventListener('click', (e) => {
         e.preventDefault(); e.stopPropagation();
-        store.set(CRATE, crate().filter((x) => !(x.kind === r.kind && x.id === r.id)));
-        renderCrate();
+        const same = (y) => y.kind === r.kind && (r.rid ? y.rid === r.rid : y.id === r.id);
+        store.set(CRATE, crate().filter((y) => !same(y)));
+        if (r.kind === 'sent' && r.rid && r.synced) db('DELETE', 'records?id=eq.' + r.rid, null, 'return=minimal').catch(() => {});
+        renderCrate(); renderRecent();
       });
+      a.appendChild(x);
       grid.appendChild(a);
-    }
+    });
+    if (crateKind === 'sent') setTimeout(markSeen, 1200);
   }
 
   // ---------- Spotify (optional): your own library, with PKCE so no secret lives in the page ----------
@@ -364,13 +521,16 @@
   // ---------- Routing ----------
   function route() {
     const h = location.hash.replace(/^#\/?/, '').split('?')[0];
-    const view = h === 'records' ? 'crate' : h === 'library' ? 'library' : 'make';
+    const view = h.startsWith('records') ? 'crate' : h === 'library' ? 'library' : 'make';
+    if (h === 'records/sent') crateKind = 'sent';
+    if (h === 'records/received') crateKind = 'received';
     ['make', 'crate', 'library'].forEach((v) => { $('view-' + v).hidden = v !== view; });
     $('tabMake').toggleAttribute('aria-current', view === 'make'); if (view === 'make') $('tabMake').setAttribute('aria-current', 'page');
     $('tabCrate').toggleAttribute('aria-current', view === 'crate'); if (view === 'crate') $('tabCrate').setAttribute('aria-current', 'page');
     $('tabLibrary').toggleAttribute('aria-current', view === 'library'); if (view === 'library') $('tabLibrary').setAttribute('aria-current', 'page');
     if (view === 'crate') renderCrate();
     if (view === 'library') renderLibrary();
+    if (view === 'make') renderRecent();
     window.scrollTo(0, 0);
   }
 
@@ -379,6 +539,10 @@
   wireMake();
   window.addEventListener('hashchange', route);
   window.addEventListener('storage', (e) => { if (e.key === CRATE && !$('view-crate').hidden) renderCrate(); });
+  // Statuses on launch, and whenever Crate comes back to the front.
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshStatus(); });
+  paintBadge();
+  refreshStatus();
   // Opened with ?link=… (e.g. from a shortcut or the share sheet): make it straight away.
   const incoming = new URLSearchParams(location.search).get('link') || new URLSearchParams(location.search).get('text');
   finishSpotifyLogin().then(() => {
