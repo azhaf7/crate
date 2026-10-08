@@ -1040,18 +1040,134 @@
   const fromSpotifyTrack = (t) => t && t.id && { title: t.name, artist: (t.artists || []).map((a) => a.name).join(', '),
     art: ((t.album && t.album.images) || [])[0] ? t.album.images[0].url : '', spotify: t.id, apple: '' };
 
-  // Library: one section per music service, each drawn on its own so one loading never holds up another.
+  // ---------- Discover: what's playing right now, no account needed ----------
+  // Apple's public iTunes charts (they answer any site), by country and genre, each song with Apple's
+  // 30-second preview. Spotify and Apple Music libraries appear underneath only once they're set up.
+  const GENRES = [['', 'Top 50'], ['14', 'Pop'], ['18', 'Hip-Hop'], ['15', 'R&B'], ['17', 'Dance'], ['20', 'Alternative'],
+                  ['21', 'Rock'], ['6', 'Country'], ['12', 'Latin'], ['51', 'K-Pop']];
+  // Moments for Ask Crate, on Apple's accessible system colours (white text passes on each).
+  const MOMENTS = [['A rainy Sunday', '#0040dd'], ['Their birthday', '#d70015'], ['After a breakup', '#5856d6'],
+                   ['A long drive', '#248a3d'], ['Missing home', '#b25000'], ['First day of a new job', '#8944ab']];
+  let chartCountry = ((navigator.language || '').match(/-([A-Za-z]{2})\b/) || [, 'us'])[1].toLowerCase();
+  let chartGenre = '', chartAudio = null, chartPlaying = null;
+  const chartCache = {};
+  const countryName = (c) => { try { return new Intl.DisplayNames([navigator.language || 'en'], { type: 'region' }).of(c.toUpperCase()); } catch (e) { return c.toUpperCase(); } };
+
+  async function fetchChart(country, genre) {
+    const key = country + ':' + genre;
+    if (chartCache[key]) return chartCache[key];
+    const j = await fetchJSON('https://itunes.apple.com/' + country + '/rss/topsongs/limit=50' + (genre ? '/genre=' + genre : '') + '/json');
+    const entries = [].concat((j.feed && j.feed.entry) || []);
+    const songs = entries.map((e) => {
+      const imgs = e['im:image'] || [], links = [].concat(e.link || []);
+      const prev = links.find((l) => l.attributes && l.attributes['im:assetType'] === 'preview');
+      return { title: (e['im:name'] || {}).label || '', artist: (e['im:artist'] || {}).label || '',
+               apple: String(((e.id || {}).attributes || {})['im:id'] || ''), spotify: '',
+               art: big(((imgs[imgs.length - 1] || {}).label || '').replace(/\/\d+x\d+bb\./, '/100x100bb.')),
+               preview: prev && /^https:\/\//.test(prev.attributes.href) ? prev.attributes.href : '' };
+    }).filter((x) => x.title && /^\d{4,15}$/.test(x.apple));
+    return (chartCache[key] = songs);
+  }
+
+  function stopChartPreview() {
+    if (chartAudio) chartAudio.pause();
+    if (chartPlaying) chartPlaying.setAttribute('aria-pressed', 'false');
+    chartPlaying = null;
+  }
+  const PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>';
+  const PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4.5" width="4" height="15" rx="1" fill="currentColor"/><rect x="14" y="4.5" width="4" height="15" rx="1" fill="currentColor"/></svg>';
+  function chartPreview(btn, song) {
+    if (chartPlaying === btn) { stopChartPreview(); btn.innerHTML = PLAY; return; }
+    if (chartPlaying) chartPlaying.innerHTML = PLAY;
+    stopChartPreview();
+    if (!chartAudio) {
+      chartAudio = new Audio();
+      chartAudio.addEventListener('ended', () => { if (chartPlaying) chartPlaying.innerHTML = PLAY; stopChartPreview(); });
+    }
+    chartAudio.src = song.preview;
+    chartAudio.play().catch(() => {});
+    chartPlaying = btn;
+    btn.setAttribute('aria-pressed', 'true');
+    btn.innerHTML = PAUSE;
+  }
+
+  // Straight to Make with Ask Crate already asking.
+  function askFor(text) {
+    location.hash = '#/';
+    setTimeout(() => {
+      $('ask').hidden = false;
+      if ($('askForm').hidden) $('askOpen').click();
+      $('askInput').value = text;
+      $('askForm').requestSubmit();
+    }, 60);
+  }
+
   function renderLibrary() {
     const root = $('libBody');
     root.textContent = '';
-    const sp = document.createElement('div'), am = document.createElement('div');
-    root.append(sp, am);
-    const shz = document.createElement('div');
-    shz.className = 'card';
-    shz.innerHTML = '<div class="src"><i style="background:#0a84ff"></i><div><h2>Shazam</h2><span>Through Apple Music</span></div></div><p>Shazam doesn’t let other apps read its history. Turn on <b>Shazam → Settings → Sync to Apple Music</b> and your Shazams show up as a “My Shazam Tracks” playlist under Apple Music above. You can paste a Shazam song’s Apple Music link any time.</p>';
-    root.appendChild(shz);
-    renderSpotify(sp);
-    renderApple(am);
+    const section = (title) => { const d = document.createElement('section'); d.className = 'disc-section'; if (title) { const h = document.createElement('h2'); h.textContent = title; d.appendChild(h); } root.appendChild(d); return d; };
+
+    if (aiOn()) {
+      const sec = section('Ask Crate for…'), wrap = document.createElement('div');
+      wrap.className = 'moments';
+      MOMENTS.forEach(([t, c]) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'moment'; b.textContent = t; b.style.background = c;
+        b.addEventListener('click', () => askFor(t.toLowerCase()));
+        wrap.appendChild(b);
+      });
+      sec.appendChild(wrap);
+    }
+
+    const sec = section('Top songs in ' + countryName(chartCountry));
+    const genres = document.createElement('div');
+    genres.className = 'chips genres'; genres.setAttribute('role', 'toolbar'); genres.setAttribute('aria-label', 'Genre');
+    GENRES.forEach(([g, label]) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip'; b.textContent = label;
+      b.setAttribute('aria-pressed', String(chartGenre === g));
+      b.addEventListener('click', () => { chartGenre = g; stopChartPreview(); renderLibrary(); });
+      genres.appendChild(b);
+    });
+    const list = document.createElement('ol'), note = document.createElement('p');
+    list.className = 'chart'; note.className = 'empty'; note.textContent = 'Loading the charts…';
+    sec.append(genres, list, note);
+    fetchChart(chartCountry, chartGenre)
+      .then((songs) => {
+        // Not every country has every genre; fall back to the US chart rather than show nothing.
+        if (!songs.length && chartCountry !== 'us') { chartCountry = 'us'; return renderLibrary(); }
+        note.remove();
+        songs.forEach((x, i) => {
+          const li = document.createElement('li');
+          li.innerHTML = '<span class="chart-rank"></span><button type="button" class="chart-main"><img alt=""><span class="row-text"><b></b><span></span></span></button>';
+          li.querySelector('.chart-rank').textContent = i + 1;
+          li.querySelector('img').src = x.art;
+          li.querySelector('b').textContent = x.title;
+          li.querySelector('.row-text span').textContent = x.artist;
+          li.querySelector('.chart-main').setAttribute('aria-label', 'Send ' + x.title + ' by ' + x.artist);
+          li.querySelector('.chart-main').addEventListener('click', () => { stopChartPreview(); location.hash = '#/'; setTimeout(() => pickSong(x), 0); });
+          if (x.preview) {
+            const play = document.createElement('button');
+            play.type = 'button'; play.className = 'chart-play'; play.innerHTML = PLAY;
+            play.setAttribute('aria-pressed', 'false'); play.setAttribute('aria-label', 'Preview ' + x.title);
+            play.addEventListener('click', () => chartPreview(play, x));
+            li.appendChild(play);
+          }
+          list.appendChild(li);
+        });
+        const foot = document.createElement('p');
+        foot.className = 'chart-foot'; foot.textContent = 'From Apple’s charts, updated daily.';
+        sec.appendChild(foot);
+      })
+      .catch(() => { note.textContent = 'Couldn’t load the charts right now. Search on Make instead.'; });
+
+    // Your own music, only once a service is set up for this Crate.
+    if (spotifyOn() || appleOn()) {
+      const mine = section('Your music'), sp = document.createElement('div'), am = document.createElement('div');
+      mine.append(sp, am);
+      if (spotifyOn()) renderSpotify(sp);
+      if (appleOn()) renderApple(am);
+    }
   }
   const libCard = (box, html) => { const d = document.createElement('div'); d.className = 'card'; d.innerHTML = html; box.appendChild(d); return d; };
   // Tabs, a list, and a status line under a connected service.
@@ -1205,11 +1321,45 @@
     $('tabCrate').toggleAttribute('aria-current', view === 'crate'); if (view === 'crate') $('tabCrate').setAttribute('aria-current', 'page');
     $('tabLibrary').toggleAttribute('aria-current', view === 'library'); if (view === 'library') $('tabLibrary').setAttribute('aria-current', 'page');
     if (view === 'crate') renderCrate();
-    if (view === 'library') renderLibrary();
+    if (view === 'library') renderLibrary(); else stopChartPreview();
     if (view === 'make') renderRecent();
     window.scrollTo(0, 0);
     document.dispatchEvent(new CustomEvent('crate:view', { detail: view }));
   }
+
+  // ---------- Appearance: Automatic (follows the phone) → Light → Dark, kept on this device ----------
+  const THEMES = ['auto', 'light', 'dark'];
+  const THEME_ICON = {
+    auto: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/></svg>',
+    light: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    dark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" fill="currentColor"/></svg>',
+  };
+  const THEME_NAME = { auto: 'Automatic', light: 'Light', dark: 'Dark' };
+  function applyTheme(t) {
+    const root = document.documentElement;
+    if (t === 'auto') delete root.dataset.theme; else root.dataset.theme = t;
+    // The browser bar follows too.
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
+      if (!m.dataset.media) m.dataset.media = m.getAttribute('media') || '';
+      if (t === 'auto') m.setAttribute('media', m.dataset.media); else m.removeAttribute('media');
+      if (t !== 'auto') m.setAttribute('content', t === 'dark' ? '#000000' : '#f2f2f7');
+      else m.setAttribute('content', /dark/.test(m.dataset.media) ? '#000000' : '#f2f2f7');
+    });
+    const b = $('themeBtn');
+    b.innerHTML = THEME_ICON[t];
+    b.setAttribute('aria-label', 'Appearance: ' + THEME_NAME[t] + '. Tap to change.');
+    b.title = 'Appearance: ' + THEME_NAME[t];
+  }
+  // Stored as plain text: the script at the top of index.html reads it before the page draws.
+  let theme = 'auto';
+  try { theme = localStorage.getItem('crate-theme') || 'auto'; } catch (e) {}
+  if (!THEMES.includes(theme)) theme = 'auto';
+  applyTheme(theme);
+  $('themeBtn').addEventListener('click', () => {
+    theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+    try { if (theme === 'auto') localStorage.removeItem('crate-theme'); else localStorage.setItem('crate-theme', theme); } catch (e) {}
+    applyTheme(theme);
+  });
 
   wireMake();
   wireAsk();

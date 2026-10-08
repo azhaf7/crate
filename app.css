@@ -26,8 +26,9 @@
   --ease: cubic-bezier(.22, 1, .36, 1);
   --spring: cubic-bezier(.3, 1.6, .5, 1);
 }
+/* Dark: follows the system unless the appearance button picked Light or Dark (html[data-theme]). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #000000;
     --surface: #1c1c1e;
     --chip: rgba(118, 118, 128, 0.24);
@@ -47,6 +48,27 @@
     --sleeve-ink: #ffffff;
   }
 }
+:root[data-theme="dark"] {
+  --bg: #000000;
+  --surface: #1c1c1e;
+  --chip: rgba(118, 118, 128, 0.24);
+  --ink: #ffffff;
+  --ink2: rgba(235, 235, 245, 0.7);
+  --ink3: rgba(235, 235, 245, 0.7);
+  --placeholder: rgba(235, 235, 245, 0.45);
+  --accent: #d81b3a;
+  --accent-text: #ff375f;               /* systemPink, dark: readable red on black */
+  --label: #ff375f;
+  --label-ink: #ff375f;
+  --error: #ff453a;
+  --nav: rgba(30, 30, 30, 0.86);
+  --line: rgba(84, 84, 88, 0.6);
+  --wrap-bg: #2c2c2e;
+  --sleeve: linear-gradient(160deg, #3a3a3c, #232325);
+  --sleeve-ink: #ffffff;
+}
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--ink); }
@@ -320,3 +342,30 @@ input::placeholder { color: var(--placeholder); }
 .pill { height: 38px; }
 .wrap .link, .account .link { min-height: 44px; }
 @media (prefers-reduced-motion: reduce) { .ai-pill.busy { animation: none; opacity: 0.7; } }
+
+/* ---- Appearance button: Automatic → Light → Dark ---- */
+.top .theme-btn { position: relative; width: 36px; height: 36px; margin-bottom: 2px; border: none; border-radius: 18px; background: var(--chip); color: var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.theme-btn::after { content: ''; position: absolute; inset: -4px; }
+.theme-btn svg { width: 20px; height: 20px; }
+
+/* ---- Discover: the charts, a preview for each song, moments for Ask Crate ---- */
+.disc-section { margin-top: 22px; }
+.disc-section > h2 { margin: 0 0 10px; font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+.moments { display: flex; gap: 8px; overflow-x: auto; margin: 0 -20px; padding: 0 20px 4px; scrollbar-width: none; }
+.moments::-webkit-scrollbar { display: none; }
+.moment { flex: none; width: 132px; height: 84px; padding: 12px; border: none; border-radius: 14px; text-align: left; font-size: 15px; font-weight: 700; line-height: 1.2; color: #fff; cursor: pointer; display: flex; align-items: flex-end; }
+.genres { margin: 0 -20px 6px; }
+.chart { list-style: none; margin: 0; padding: 0 0 0 14px; border-radius: 14px; background: var(--surface); }
+.chart li { display: flex; align-items: center; gap: 4px; border-bottom: 0.5px solid var(--line); }
+.chart li:last-child { border-bottom: none; }
+.chart-rank { width: 22px; flex: none; font-size: 15px; font-weight: 700; color: var(--ink2); font-variant-numeric: tabular-nums; }
+.chart-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 8px 0; border: none; background: none; text-align: left; cursor: pointer; }
+.chart-main img, .chart-main .ph { width: 48px; height: 48px; flex: none; border-radius: 4px; object-fit: cover; background: var(--chip); }
+.chart-main .row-text { min-width: 0; flex: 1; }
+.chart-main b, .chart-main span span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chart-main b { font-size: 15px; font-weight: 500; }
+.chart-main span span { font-size: 13px; color: var(--ink2); }
+.chart-play { width: 44px; height: 44px; flex: none; margin-right: 4px; border: none; border-radius: 22px; background: none; color: var(--accent-text); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.chart-play svg { width: 18px; height: 18px; }
+.chart-play[aria-pressed="true"] { background: var(--chip); }
+.chart-foot { margin: 8px 2px 0; font-size: 12px; color: var(--ink2); }

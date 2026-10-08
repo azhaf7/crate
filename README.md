@@ -44,8 +44,10 @@ It's a web app: it works in any browser, and on iPhone or Android you can add it
   Records writes up your week in records: a headline, what you shared and with whom, three vibe words.
 - **Stats:** Records shows how many you've sent, how many were opened, and your friends' top reaction.
 - **Reactions:** you see your friend's reaction on Records next to Opened, and it counts on the badge.
-- **Library (optional):** connect Spotify (liked songs, recently played, playlists) or Apple Music
-  (recently played, library, playlists, including My Shazam Tracks) and send songs straight from them.
+- **Discover:** what's playing right now in your country, by genre (Apple's public charts, no account
+  needed), with a 30-second preview on every song. Tap one to press it onto a record. Moments like "A rainy
+  Sunday" start Ask Crate. Spotify and Apple Music libraries show up here once they're set up.
+- **Appearance:** the button at the top of Make switches between Automatic (follows the phone), Light and Dark.
 - **The record link** carries the song, artist, cover, note and the Spotify / Apple Music IDs, so it
   opens anywhere even if the database is down. Links made by the Vinyl Player Mac app open here too.
 
@@ -161,7 +163,7 @@ connect; ask Spotify for an extension to open it to everyone.
 ## Files
 
 ```
-index.html, app.css, app.js   The app: Make, Records, Library
+index.html, app.css, app.js   The app: Make, Records, Discover
 stack.js, stack.css           The sleeve stack on Records, the Library source cards
 r/                            The record page friends open (same motion as Vinyl Player's)
 config.js                     Supabase URL + anon key, Spotify Client ID (optional)
