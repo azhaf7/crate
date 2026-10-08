@@ -190,3 +190,77 @@ input::placeholder { color: rgba(20, 18, 16, 0.38); }
 .sheet-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
 .sheet-foot .link { font-size: 15px; min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; }
 .tab[aria-current="page"] .badge { background: var(--pop); color: #fff; box-shadow: 0 0 0 2px var(--accent); }
+
+/* ---- Ask Crate: describe someone, Claude picks songs ---- */
+.ask { margin-top: 2px; }
+.ask-open { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 46px; padding: 0 14px; border: none; border-radius: 12px; background: linear-gradient(120deg, color-mix(in oklch, var(--violet) 12%, var(--surface)), var(--surface) 70%); box-shadow: inset 0 0 0 0.5px var(--line); color: var(--ink2); font-size: 14px; text-align: left; cursor: pointer; }
+.ask-open b { color: var(--ink); font-weight: 700; }
+.ask-open[aria-expanded="true"] { border-radius: 12px 12px 0 0; }
+.spark { color: var(--violet); font-size: 16px; }
+.ask-form { display: flex; align-items: center; gap: 8px; height: 50px; padding: 0 6px 0 12px; border-radius: 0 0 12px 12px; background: var(--surface); box-shadow: inset 0 0 0 0.5px var(--line); animation: rise 300ms var(--ease) both; }
+.ask-form input { flex: 1; min-width: 0; height: 36px; border: none; background: transparent; font-size: 16px; color: var(--ink); outline: none; }
+.ask-form .pill { background: var(--violet); color: #fff; }
+.ask-form .pill:disabled { opacity: 0.6; }
+.ask-rows .row { animation: rise 380ms var(--ease) both; }
+.ask-rows .row:nth-child(2) { animation-delay: 60ms; } .ask-rows .row:nth-child(3) { animation-delay: 120ms; }
+.ask-rows .row:nth-child(4) { animation-delay: 180ms; } .ask-rows .row:nth-child(5) { animation-delay: 240ms; } .ask-rows .row:nth-child(6) { animation-delay: 300ms; }
+
+/* ---- Note: "Write it for me" and the three ideas ---- */
+.note-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 26px; }
+.ai-pill { height: 26px; padding: 0 10px; border: none; border-radius: 13px; background: color-mix(in oklch, var(--violet) 14%, transparent); color: var(--violet); font-size: 12px; font-weight: 700; cursor: pointer; }
+.ai-pill.busy { animation: breathe 1.2s ease-in-out infinite; }
+.ai-pill:disabled { cursor: progress; }
+.note-ideas { display: flex; flex-direction: column; gap: 6px; }
+.note-ideas:empty { display: none; }
+.idea { padding: 10px 12px; border: none; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--violet) 30%, transparent); color: var(--ink); font-size: 14px; font-weight: 400; text-align: left; cursor: pointer; animation: rise 320ms var(--ease) both; }
+.idea:hover { background: color-mix(in oklch, var(--violet) 6%, var(--surface)); }
+.note-ideas .status { margin: 0; }
+.ask-ideas { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.ask-ideas .chip { height: 30px; padding: 0 12px; border: none; border-radius: 15px; background: color-mix(in oklch, var(--violet) 10%, var(--surface)); color: var(--ink); font-size: 13px; font-weight: 500; cursor: pointer; box-shadow: inset 0 0 0 0.5px var(--line); }
+.ask-ideas .chip:hover { background: color-mix(in oklch, var(--violet) 18%, var(--surface)); }
+.sheet-actions .btn:disabled { opacity: 0.5; cursor: progress; }
+
+/* ---- Records: how your records are landing ---- */
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 24px; }
+.stats > div { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 6px; border-radius: 16px; background: var(--surface); box-shadow: inset 0 0 0 0.5px var(--line); }
+.stats b { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.stats span { font-size: 12px; color: var(--ink2); }
+.paste > svg circle { fill: none; }
+.search-rows .row { animation: rise 260ms var(--ease) both; }
+
+/* ---- Mixtape: 2 to 5 songs in one sleeve ---- */
+.add-track { height: 42px; font-size: 14px; border-radius: 21px; }
+.mix { display: flex; flex-direction: column; gap: 8px; animation: rise 320ms var(--ease) both; }
+.mix-label { font-size: 12px; font-weight: 600; color: var(--ink2); }
+.mix-name { height: 46px; padding: 0 12px; border: none; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 0.5px var(--line); font-size: 17px; font-weight: 700; color: var(--ink); }
+.mix-list { list-style: none; margin: 0; padding: 0; counter-reset: track; border-radius: 14px; background: var(--surface); box-shadow: inset 0 0 0 0.5px var(--line); }
+.mix-list li { display: flex; align-items: center; gap: 10px; padding: 8px 6px 8px 10px; counter-increment: track; border-bottom: 0.5px solid var(--line); animation: rise 280ms var(--ease) both; }
+.mix-list li:last-child { border-bottom: none; }
+.mix-list li::before { content: counter(track); width: 14px; flex: none; font-size: 12px; font-weight: 700; color: var(--ink2); text-align: center; font-variant-numeric: tabular-nums; }
+.mix-list img, .mix-list .ph { width: 40px; height: 40px; flex: none; border-radius: 2px; object-fit: cover; background: var(--bg); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
+.mix-list .row-text { min-width: 0; flex: 1; }
+.mix-list .row-text b, .mix-list .row-text span, .mix-list .row-text i { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mix-list .row-text b { font-size: 14px; font-weight: 600; }
+.mix-list .row-text span { font-size: 12px; color: var(--ink2); }
+.mix-list .row-text i { font-size: 12px; font-style: normal; color: var(--violet); }
+.mix-list button { width: 32px; height: 32px; flex: none; border: none; border-radius: 16px; background: transparent; color: var(--ink2); font-size: 16px; cursor: pointer; }
+.mix-list button:hover { background: var(--bg); color: var(--ink); }
+.mix-list button:disabled { visibility: hidden; }
+
+/* ---- Crate Wrapped: your week in records ---- */
+.wrap { position: relative; margin-top: 24px; padding: 18px 18px 14px; border-radius: 22px; overflow: hidden; color: #fff;
+  background: radial-gradient(120% 90% at 0% 0%, #7a5cff 0%, transparent 60%), radial-gradient(90% 90% at 100% 100%, #ff5a6e 0%, transparent 55%), #1b1530;
+  box-shadow: 0 14px 36px rgba(40, 20, 90, 0.28); }
+.wrap::after { content: ''; position: absolute; right: -60px; top: -60px; width: 180px; height: 180px; border-radius: 50%; opacity: 0.35; pointer-events: none;
+  background: radial-gradient(circle, #0a0a0b 0 6%, transparent 7%), repeating-radial-gradient(circle, #101012 0 1.1px, #24242a 1.5px, #101012 2.3px); }
+.wrap > * { position: relative; z-index: 1; }
+.wrap-kicker { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 255, 255, 0.72); }
+.wrap h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; text-wrap: balance; }
+.wrap-sum { margin: 0 0 14px; font-size: 15px; line-height: 1.45; color: rgba(255, 255, 255, 0.88); text-wrap: pretty; }
+.wrap .pill.accent { background: #fff; color: #1b1530; }
+.wrap .ac-msg { color: rgba(255, 255, 255, 0.8); }
+.wrap .ac-msg.error { color: #ffd0d6 !important; }
+.wrap-vibes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.wrap-vibes span { padding: 5px 11px; border-radius: 14px; background: rgba(255, 255, 255, 0.16); font-size: 13px; font-weight: 600; }
+.wrap-foot { display: flex; justify-content: space-between; }
+.wrap .link { color: #fff; min-height: 36px; }

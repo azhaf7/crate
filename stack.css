@@ -14,14 +14,24 @@
   -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 12%, #000 86%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0%, #000 12%, #000 86%, transparent 100%); }
 .stack:active { cursor: grabbing; }
 .slab { position: absolute; left: 50%; top: 50%; width: 230px; height: 230px; margin: -115px 0 0 -115px; transform-style: preserve-3d; will-change: transform; }
-.slab-rec { position: absolute; left: 10px; top: 10px; width: 210px; height: 210px; border-radius: 50%; background: var(--groove); box-shadow: 0 0 0 2px #0a0a0b inset, 6px 10px 24px rgba(0, 0, 0, 0.35); }
+.slab[hidden] { display: none; }
+.slab-rec { position: absolute; left: 11px; top: 11px; width: 208px; height: 208px; border-radius: 50%; background: var(--groove); box-shadow: 0 0 0 2px #0a0a0b inset, 6px 10px 24px rgba(0, 0, 0, 0.35); }
 .slab-rec::before { content: ''; position: absolute; inset: 68px; border-radius: 50%; background: var(--a, var(--art)); }
 .slab-rec::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, #000 0 3px, transparent 3.5px), conic-gradient(transparent 0deg, rgba(255,255,255,0.12) 28deg, transparent 54deg, transparent 180deg, rgba(255,255,255,0.08) 206deg, transparent 232deg); }
-.slab-art { position: absolute; inset: 0; border-radius: 3px; background: var(--a, var(--art)); box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.15), 0 18px 40px rgba(0, 0, 0, 0.28); transform: translateZ(1px); }
-.slab-art::after { content: ''; position: absolute; inset: 0; border-radius: 3px; background: linear-gradient(120deg, rgba(255,255,255,0.22), transparent 38%, rgba(0,0,0,0.1)); }
-.slab-spine { position: absolute; left: 0; right: 0; height: 22px; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 0 10px; box-sizing: border-box; font-size: 10px; white-space: nowrap; overflow: hidden; color: var(--ink); background: var(--edge, #e8e2d8); backface-visibility: hidden; }
-.slab-spine b { font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em; }
-.slab-spine i { font-style: normal; font-weight: 500; }
+/* The sleeve: printed card stock. A soft sheen, the faint ring a record wears into its cover over the
+   years, a little paper grain, and an edge that catches the light. */
+.slab-art { position: absolute; inset: 0; border-radius: 2px; background: var(--a, var(--art)); transform: translateZ(0.5px); backface-visibility: hidden;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.18), 0 2px 3px rgba(0, 0, 0, 0.12), 0 18px 36px rgba(0, 0, 0, 0.24); }
+.slab-art::before { content: ''; position: absolute; inset: 0; border-radius: 2px; pointer-events: none; opacity: 0.55; mix-blend-mode: soft-light;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0 43.2%, rgba(255, 255, 255, 0.5) 44%, transparent 45.5%, transparent 46.5%, rgba(255, 255, 255, 0.28) 47.2%, transparent 48.5%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.slab-art::after { content: ''; position: absolute; inset: 0; border-radius: 2px; pointer-events: none;
+  background: linear-gradient(118deg, rgba(255, 255, 255, 0.2), transparent 34%, transparent 70%, rgba(0, 0, 0, 0.12)),
+              linear-gradient(90deg, transparent 97%, rgba(0, 0, 0, 0.16)); }
+/* The edge: about 4px of card, seen as the sleeves tilt. */
+.slab-spine { position: absolute; left: 1px; right: 1px; height: 4px; backface-visibility: hidden;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.18), transparent 12%, transparent 88%, rgba(0, 0, 0, 0.18)), var(--edge, #e3dccf); }
 .slab-spine.bottom { top: 100%; transform-origin: 50% 0; transform: rotateX(-90deg); }
 .slab-spine.top { bottom: 100%; transform-origin: 50% 100%; transform: rotateX(90deg); }
 .stack-info { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; margin: 8px 4px 0; }

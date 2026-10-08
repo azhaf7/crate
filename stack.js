@@ -28,7 +28,8 @@
   }
 
   // ---------- The sleeve stack ----------
-  let pos = 0, target = 0, drag = null, wacc = 0, outs = [], angle = 0, list = [], last = performance.now(), focus = -1;
+  let pos = 0, target = 0, drag = null, outs = [], angle = 0, list = [], slabs = [], last = performance.now(), focus = -1;
+  const VISIBLE = 7;   // sleeves further than this from the front aren't drawn at all
   const FILTERS = [['all', 'All', '#141210'], ['favs', 'Favorites', '#ff5a6e'], ['received', 'From friends', '#7a5cff'], ['sent', 'Sent', '#0a84ff']];
   const FAVS = 'crate-favs';
   const favs = () => { try { return JSON.parse(localStorage.getItem(FAVS)) || {}; } catch (e) { return {}; } };
@@ -44,15 +45,16 @@
       chips.appendChild(b);
     });
     list = stackList();
-    const st = $('stack'); st.querySelectorAll('.slab').forEach((n) => n.remove()); outs = [];
+    const st = $('stack'); st.querySelectorAll('.slab').forEach((n) => n.remove()); outs = []; slabs = [];
+    pos = target = Math.max(0, Math.min(list.length - 1, target));
     list.forEach((r, i) => {
-      const s = el('<div class="slab"><div class="slab-rec"></div><div class="slab-art"></div><div class="slab-spine bottom"><b></b><i></i></div><div class="slab-spine top"><b></b><i></i></div></div>');
+      // A sleeve is a thin card: the cover, a few millimetres of edge top and bottom, the record inside.
+      const s = el('<div class="slab"><div class="slab-rec"></div><div class="slab-spine bottom"></div><div class="slab-spine top"></div><div class="slab-art"></div></div>');
       s.dataset.i = i;
-      s.style.setProperty('--a', A().artCSS(r.art));
-      const tc = tint(r.art, paintTints); if (tc) s.style.setProperty('--edge', 'color-mix(in oklch, ' + tc + ' 55%, #fff)');
-      s.querySelectorAll('.slab-spine b').forEach((n) => (n.textContent = r.title));
-      s.querySelectorAll('.slab-spine i').forEach((n) => { n.style.fontStyle = 'normal'; n.textContent = r.artist; });
+      s.style.setProperty('--a', A().coverCSS ? A().coverCSS(r) : A().artCSS(r.art));
+      const tc = tint(r.art, paintTints); if (tc) s.style.setProperty('--edge', 'color-mix(in oklch, ' + tc + ' 40%, #e9e2d6)');
       st.appendChild(s);
+      slabs.push(s);
     });
     const empty = !list.length;
     $('stack').hidden = empty; $('stackActions').hidden = empty; if (empty) $('stackGlow').style.background = 'none';
@@ -63,7 +65,7 @@
     focus = -1;
   }
   function paintTints() {
-    document.querySelectorAll('#stack .slab').forEach((s) => { const r = list[+s.dataset.i]; const tc = r && tints[r.art]; if (tc) s.style.setProperty('--edge', 'color-mix(in oklch, ' + tc + ' 55%, #fff)'); });
+    slabs.forEach((s, i) => { const r = list[i]; const tc = r && tints[r.art]; if (tc) s.style.setProperty('--edge', 'color-mix(in oklch, ' + tc + ' 40%, #e9e2d6)'); });
     focus = -1;
   }
   const clamp = (v) => Math.max(0, Math.min(list.length - 1, v));
@@ -72,7 +74,7 @@
     const info = $('stackInfo');
     info.querySelector('b').textContent = r.title;
     info.querySelector('span').textContent = r.artist || ' ';
-    info.querySelector('small').textContent = r.kind === 'sent' ? (r.to ? 'Sent to ' + r.to : 'Sent') + (r.note ? ' · “' + r.note + '”' : '') : 'From ' + (r.from || 'a friend') + (r.note ? ' · “' + r.note + '”' : '');
+    info.querySelector('small').textContent = r.kind === 'sent' ? (r.to ? 'Sent to ' + r.to : 'Sent') + (r.rid ? ' · ' + A().stateText(r) : '') + (r.note ? ' · “' + r.note + '”' : '') : 'From ' + (r.from || 'a friend') + (r.note ? ' · “' + r.note + '”' : '');
     const fv = !!favs()[favKey(r)]; $('stackFav').setAttribute('aria-pressed', String(fv)); $('stackFav').setAttribute('aria-label', fv ? 'Remove from favorites' : 'Favorite');
     $('stackOpen').href = A().shareURL(r);
     const tc = tints[r.art];
@@ -84,8 +86,11 @@
     if (st && !st.hidden && !$('view-crate').hidden && list.length) {
       if (!drag) pos += (target - pos) * (1 - Math.exp(-dt / 190));
       if (!reduced) angle = (angle + dt * 0.2) % 360;
-      st.querySelectorAll('.slab').forEach((s) => {
-        const i = +s.dataset.i, d = i - pos, ad = Math.abs(d), sd = Math.sign(d), m = Math.min(1, ad);
+      slabs.forEach((s, i) => {
+        const d = i - pos, ad = Math.abs(d), sd = Math.sign(d), m = Math.min(1, ad);
+        // Only the sleeves near the front are moved each frame; the rest wait out of sight.
+        if (ad > VISIBLE) { if (!s.hidden) { s.hidden = true; outs[i] = 0; } return; }
+        if (s.hidden) s.hidden = false;
         const y = sd * (ad < 1 ? ad * 170 : 170 + (ad - 1) * 56), z = -m * 60 - Math.max(0, ad - 1) * 12;
         s.style.transform = 'translate3d(' + (-(1 - m) * 36).toFixed(1) + 'px,' + y.toFixed(1) + 'px,' + z.toFixed(1) + 'px) rotateX(' + (sd * m * 64).toFixed(2) + 'deg) scale(' + (1 - m * 0.06).toFixed(3) + ')';
         s.style.zIndex = String(1000 - Math.round(ad * 10));
@@ -93,7 +98,7 @@
         // The record stays in its sleeve until this one settles in front, then slides out and spins.
         const want = ad < 0.12 && !drag ? 1 : 0, cur = outs[i] || 0;
         const o = outs[i] = cur + (want - cur) * (1 - Math.exp(-dt / (want > cur ? 200 : 90))), e = o * o * (3 - 2 * o);
-        s.firstChild.style.transform = 'translateZ(-1px) translateX(' + (e * 96).toFixed(1) + 'px) rotate(' + (angle * e).toFixed(1) + 'deg)';
+        s.firstChild.style.transform = 'translateZ(-3px) translateX(' + (e * 96).toFixed(1) + 'px) rotate(' + (angle * e).toFixed(1) + 'deg)';
       });
       const f = clamp(Math.round(pos)); if (f !== focus) setFocus(f);
     }
@@ -116,10 +121,21 @@
     const up = () => {
       if (!drag) return; const d = drag; drag = null;
       if (d.moved < 6) { if (d.i >= 0 && d.i !== focus) target = d.i; else if (d.i >= 0) window.open($('stackOpen').href, '_blank', 'noopener'); return; }
-      target = clamp(Math.round(pos - Math.max(-1.5, Math.min(1.5, d.v * 1.2))));
+      // A flick carries on: where the sleeves would be after ~a quarter second at that speed.
+      if (performance.now() - d.lt > 80) d.v = 0;   // held still before letting go: no flick
+      target = clamp(Math.round(pos - Math.max(-6, Math.min(6, (d.v * 260) / 150))));
     };
     st.addEventListener('pointerup', up); st.addEventListener('pointercancel', up);
-    st.addEventListener('wheel', (e) => { e.preventDefault(); wacc += e.deltaY; const now = performance.now(); if (Math.abs(wacc) >= 120 && now - (st.lastStep || 0) > 220) { target = clamp(target + Math.sign(wacc)); st.lastStep = now; wacc = 0; } clearTimeout(st.wt); st.wt = setTimeout(() => (wacc = 0), 160); }, { passive: false });
+    // Wheel and trackpad move the sleeves continuously, then settle on the nearest one. At the first
+    // or last record the page scrolls on instead of getting stuck.
+    st.addEventListener('wheel', (e) => {
+      const dy = e.deltaMode === 1 ? e.deltaY * 32 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY;
+      if ((dy < 0 && target <= 0) || (dy > 0 && target >= list.length - 1)) return;
+      e.preventDefault();
+      target = Math.max(0, Math.min(list.length - 1, target + dy / 160));
+      clearTimeout(st.wt);
+      st.wt = setTimeout(() => { target = clamp(Math.round(target)); }, 110);
+    }, { passive: false });
     st.tabIndex = 0;
     st.addEventListener('keydown', (e) => { if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { target = clamp(target + 1); e.preventDefault(); } if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { target = clamp(target - 1); e.preventDefault(); } });
     $('stackFav').addEventListener('click', () => {
@@ -131,7 +147,7 @@
     $('stackSend').addEventListener('click', () => {
       const r = list[focus]; if (!r) return;
       location.hash = '#/';
-      setTimeout(() => { A().showRecord({ title: r.title, artist: r.artist, art: r.art, spotify: r.spotify, apple: r.apple }); $('sendBtn').click(); }, 60);
+      setTimeout(() => { A().showRecord({ title: r.title, artist: r.artist, art: r.art, spotify: r.spotify, apple: r.apple, tracks: r.tracks }); $('sendBtn').click(); }, 60);
     });
     requestAnimationFrame(tick);
   }

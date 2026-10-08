@@ -45,11 +45,25 @@
       <span id="previewLabel">Play preview</span>
       <span class="preview-track" aria-hidden="true"><i id="previewBar"></i></span>
     </button>
-    <div class="actions">
+    <ol class="tracklist" id="tracklist" hidden aria-label="Tracklist"></ol>
+    <div class="actions" id="mainActions">
       <a class="btn btn-spotify" id="spotifyLink" target="_blank" rel="noopener">Open in Spotify</a>
       <a class="btn btn-apple" id="appleLink" target="_blank" rel="noopener">Apple Music</a>
     </div>
-    <button class="save" id="saveBtn" type="button">Save in Crate</button>
+    <div class="react" id="react" hidden>
+      <p class="react-label" id="reactLabel">How did it land?</p>
+      <div class="react-row" role="group" aria-labelledby="reactLabel">
+        <button type="button" data-r="love" aria-label="Love it" aria-pressed="false">❤️</button>
+        <button type="button" data-r="fire" aria-label="Fire" aria-pressed="false">🔥</button>
+        <button type="button" data-r="cry" aria-label="Made me cry" aria-pressed="false">😭</button>
+        <button type="button" data-r="dance" aria-label="Dancing" aria-pressed="false">🕺</button>
+        <button type="button" data-r="mind" aria-label="Mind blown" aria-pressed="false">🤯</button>
+      </div>
+    </div>
+    <div class="reply-row">
+      <a class="reply" id="replyLink" href="../">Send one back</a>
+      <button class="save" id="saveBtn" type="button">Save in Crate</button>
+    </div>
     <a class="app-link" id="appLink" href="../">Make your own record on Crate</a>
   </section>
 </main>

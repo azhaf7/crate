@@ -208,3 +208,45 @@ a:hover { color: oklch(0.92 0.06 70); }
 .preview-track { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgba(255, 255, 255, 0.12); }
 .preview-track i { display: block; height: 100%; background: #fff; transform: scaleX(0); transform-origin: left; transition: transform 250ms linear; }
 @keyframes preview-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* Reactions: one tap tells the sender how it landed */
+.react { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.react[hidden] { display: none; }
+.react-label { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255, 255, 255, 0.5); }
+.react-row { display: flex; gap: 8px; }
+.react-row button { width: 48px; height: 48px; border: none; border-radius: 50%; background: rgba(255, 255, 255, 0.08); box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.18) inset; font-size: 22px; line-height: 1; cursor: pointer; transition: background 160ms, box-shadow 160ms; }
+.react-row button:hover { background: rgba(255, 255, 255, 0.16); }
+.react-row button[aria-pressed="true"] { background: color-mix(in oklch, var(--tint) 55%, #fff 10%); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85) inset; }
+.react-row button:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.7); outline-offset: 3px; }
+
+/* Send one back: the reply loop */
+.reply-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.reply { display: flex; align-items: center; height: 46px; padding: 0 22px; border-radius: 23px; background: var(--sticker); color: #241c16; font-size: 15px; font-weight: 700; text-decoration: none; }
+.reply:hover { color: #241c16; filter: brightness(1.05); }
+.reply:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.7); outline-offset: 3px; }
+
+/* Mixtape: the tracklist under the record */
+.tracklist { list-style: none; margin: 0; padding: 4px; width: min(420px, 92vw); counter-reset: track; border-radius: 18px; background: rgba(255, 255, 255, 0.06); box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.14) inset; text-align: left; }
+.tracklist[hidden] { display: none; }
+.tracklist li { display: flex; align-items: center; gap: 4px; counter-increment: track; border-radius: 14px; transition: background 200ms; }
+.tracklist li.is-playing { background: color-mix(in oklch, var(--tint) 30%, transparent); }
+.track { all: unset; display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; padding: 8px; border-radius: 14px; cursor: pointer; }
+.track::before { content: counter(track); width: 14px; flex: none; font-size: 12px; font-weight: 700; color: rgba(255, 255, 255, 0.45); text-align: center; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+.track:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.7); }
+.no-preview .track { cursor: default; }
+.track-art { width: 42px; height: 42px; flex: none; border-radius: 2px; background: var(--art); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); }
+.track-text { min-width: 0; flex: 1; display: flex; flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; }
+.track-text b, .track-text span, .track-text i { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track-text b { font-size: 15px; font-weight: 600; color: #fff; }
+.track-text span { font-size: 13px; color: rgba(255, 255, 255, 0.6); }
+.track-text i { font-size: 12px; font-style: normal; color: oklch(0.85 0.08 70); }
+.track-text i:empty { display: none; }
+.track-eq { display: none; align-items: flex-end; gap: 2px; height: 14px; flex: none; }
+.is-playing .track-eq { display: flex; }
+.track-eq i { width: 3px; background: #fff; border-radius: 1px; animation: eq 900ms ease-in-out infinite; }
+.track-eq i:nth-child(2) { animation-delay: -300ms; } .track-eq i:nth-child(3) { animation-delay: -600ms; }
+@keyframes eq { 0%, 100% { height: 30%; } 50% { height: 100%; } }
+.track-links { display: flex; flex-direction: column; gap: 2px; padding-right: 8px; }
+.track-links a { font: 600 11px -apple-system, BlinkMacSystemFont, sans-serif; color: rgba(255, 255, 255, 0.55); text-decoration: none; }
+.track-links a:hover { color: #fff; }
+@media (prefers-reduced-motion: reduce) { .track-eq i { animation: none; height: 70%; } }

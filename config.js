@@ -2,8 +2,13 @@
 // - Supabase: the project URL and its anon (publishable) key. The database only accepts what
 //   supabase/schema.sql allows, so this key can't read anyone else's records.
 // - Spotify Client ID (optional): it's in every Spotify web app. Never put the Client Secret here.
+// - ai: Ask Crate and "Write it for me" (Claude). Needs the crate-ai Edge Function deployed; set false to hide them.
+// - appleMusic: list an Apple Music library in Library. Needs the apple-music-token function (see README).
+// The Anthropic API key is never here: it's a Supabase secret only the Edge Function can read.
 window.CRATE = {
   supabaseUrl: 'https://fnnpicvcvonmnwkijlwc.supabase.co',
   supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZubnBpY3Zjdm9ubW53a2lqbHdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMjg5ODcsImV4cCI6MjEwNjgwNDk4N30.i0OO9XU6A9lyZjpqekJHFkabD7fdylDqef5YecDVzBk',
   spotifyClientId: '',
+  ai: true,
+  appleMusic: false,
 };

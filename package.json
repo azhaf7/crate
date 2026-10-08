@@ -1,0 +1,9 @@
+{
+  "name": "crate",
+  "private": true,
+  "type": "module",
+  "description": "Send songs to friends as vinyl records. The site is static; only api/ (Vercel functions) uses these packages.",
+  "dependencies": {
+    "@vercel/og": "^0.11.1"
+  }
+}

@@ -42,7 +42,7 @@
           <div class="card-band">
             <div class="card-text">
               <div class="card-title" id="sTitle">Nothing pressed yet</div>
-              <div class="card-sub" id="sArtist">Spotify and Apple Music links work</div>
+              <div class="card-sub" id="sArtist">Search, or paste a Spotify or Apple Music link</div>
             </div>
           </div>
         </div>
@@ -50,12 +50,25 @@
     </section>
 
     <form class="paste" id="pasteForm" autocomplete="off">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>
-      <label for="link" class="visually-hidden">Spotify or Apple Music link</label>
-      <input id="link" name="link" type="url" inputmode="url" placeholder="Paste a Spotify or Apple Music link">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>
+      <label for="link" class="visually-hidden">Search a song, or paste a Spotify or Apple Music link</label>
+      <input id="link" name="link" type="search" enterkeyhint="search" autocapitalize="off" spellcheck="false" placeholder="Search a song or paste a link">
       <button type="button" class="pill accent" id="pasteBtn">Paste</button>
     </form>
     <p class="status" id="status" role="status"></p>
+    <div class="rows search-rows" id="searchRows" aria-label="Songs found"></div>
+
+    <section class="ask" id="ask" hidden aria-label="Ask Crate">
+      <button class="ask-open" id="askOpen" type="button" aria-expanded="false"><span class="spark" aria-hidden="true">✦</span><span>Not sure what to send? <b>Ask Crate</b></span></button>
+      <form class="ask-form" id="askForm" autocomplete="off" hidden>
+        <label for="askInput" class="visually-hidden">Who it’s for, or what the moment is</label>
+        <input id="askInput" maxlength="200" placeholder="my sister, just moved to Tokyo, misses home">
+        <button class="pill accent" type="submit" id="askBtn">Ask</button>
+      </form>
+      <div class="ask-ideas" id="askIdeas" hidden aria-label="Ideas to start from"></div>
+      <p class="status" id="askStatus" role="status"></p>
+      <div class="rows ask-rows" id="askRows"></div>
+    </section>
 
     <form class="manual" id="manual" hidden>
       <p class="hint">Couldn't read that link. Type the song instead:</p>
@@ -65,11 +78,21 @@
     </form>
 
     <section class="studio" id="studio" hidden aria-label="Who it's for">
+      <section class="mix" id="mix" hidden aria-label="Mixtape">
+        <div class="note-head"><label for="mixName" class="mix-label">Mixtape name</label><button class="ai-pill" id="mixAI" type="button" hidden><span aria-hidden="true">✦</span> Sequence it for me</button></div>
+        <input class="mix-name" id="mixName" maxlength="60" placeholder="A mixtape" autocomplete="off">
+        <ol class="mix-list" id="mixList"></ol>
+      </section>
+      <button class="btn ghost add-track" id="addTrack" type="button"></button>
       <div class="fields">
         <label class="field"><span>To</span><input id="to" maxlength="40" placeholder="Their name" autocomplete="off"></label>
         <label class="field"><span>From</span><input id="from" maxlength="30" placeholder="Your name" autocomplete="given-name"></label>
       </div>
-      <label class="field"><span>Note <i>optional</i></span><input id="note" maxlength="80" placeholder="this one's for the drive home" autocomplete="off"></label>
+      <div class="field note-field">
+        <div class="note-head"><label for="note">Note <i>optional</i></label><button class="ai-pill" id="noteAI" type="button" hidden><span aria-hidden="true">✦</span> Write it for me</button></div>
+        <input id="note" maxlength="80" placeholder="this one's for the drive home" autocomplete="off">
+        <div class="note-ideas" id="noteIdeas" role="group" aria-label="Note ideas"></div>
+      </div>
       <button class="btn accent big" id="sendBtn" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3L3 10.5l7 2.5 2.5 7L21 3z"/></svg>Send record
       </button>
@@ -101,6 +124,8 @@
     </div>
     <h2 class="h2 grid-head" id="gridHead" hidden>All records</h2>
     <div class="grid" id="crateGrid" hidden></div>
+    <section class="wrap" id="wrap" hidden aria-live="polite"></section>
+    <div class="stats" id="stats" hidden aria-label="How your records are landing"></div>
     <div id="account"></div>
   </section>
 

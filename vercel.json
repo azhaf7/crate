@@ -1,0 +1,7 @@
+{
+  "rewrites": [{ "source": "/s/:id", "destination": "/api/card?id=:id" }],
+  "functions": {
+    "api/card.js": { "includeFiles": "config.js" },
+    "api/og.js": { "includeFiles": "config.js", "memory": 1024 }
+  }
+}

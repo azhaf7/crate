@@ -33,7 +33,27 @@
              spotify: /^[A-Za-z0-9]{22}$/.test(sp) ? sp : '',
              apple: /^\d{4,15}$/.test(ap) ? ap : '',
              rid: /^[A-Za-z0-9]{12}$/.test(g('id')) ? g('id') : '',
-             art: artOK(g('art')) ? g('art') : '' };
+             art: artOK(g('art')) ? g('art') : '',
+             tracks: mixOf(g('mix')) };
+  }
+
+  // A mixtape's songs: [title, artist, apple, spotify, cover, line] each, 2 to 5 of them.
+  function mixOf(raw) {
+    let a = [];
+    try { a = JSON.parse(raw || '[]'); } catch (e) { return null; }
+    const ts = (Array.isArray(a) ? a : []).slice(0, 5).filter(Array.isArray).map((x) => ({
+      title: String(x[0] || '').slice(0, 200), artist: String(x[1] || '').slice(0, 200),
+      apple: /^\d{4,15}$/.test(x[2]) ? x[2] : '', spotify: /^[A-Za-z0-9]{22}$/.test(x[3]) ? x[3] : '',
+      art: artOK(x[4]) ? x[4] : '', line: String(x[5] || '').slice(0, 80) })).filter((t) => t.title);
+    return ts.length > 1 ? ts : null;
+  }
+  const cssURL = (u) => 'url("' + u.replace(/["\\\n]/g, encodeURIComponent) + '")';
+  // A mixtape's sleeve is a collage of its first four covers.
+  function mosaic(ts) {
+    const arts = ts.map((t) => t.art).filter(Boolean).slice(0, 4);
+    if (arts.length < 2) return '';
+    return ['0 0', '100% 0', '0 100%', '100% 100%'].map((q, i) => cssURL(arts[i % arts.length]) + ' ' + q + ' / 50% 50% no-repeat').join(', ') +
+      ', linear-gradient(160deg, oklch(0.6 0.1 60), oklch(0.3 0.06 40))';
   }
 
   // ---- Artwork (iTunes Search API, cached in localStorage) ----
@@ -80,7 +100,8 @@
 
   function applyArt(entry) {
     if (!entry) return;
-    if (entry.url) {
+    // A mixtape's sleeve keeps its collage; its first cover only sets the colour.
+    if (entry.url && !params().tracks) {
       const safe = entry.url.replace(/["\\\n]/g, encodeURIComponent);
       page.style.setProperty('--art', 'center / cover no-repeat url("' + safe + '"), linear-gradient(160deg, oklch(0.6 0.1 60), oklch(0.3 0.06 40))');
     }
@@ -143,51 +164,109 @@
     }));
   }
 
+  // One 30-second preview per song: one for a record, up to five for a mixtape, played in order.
   const audio = new Audio();
   audio.preload = 'auto';
-  let previewFor = '';
-  function findPreview(p) {
-    const key = keyOf(p);
-    if (previewFor === key) return;
-    previewFor = key;
-    audio.pause(); audio.removeAttribute('src');
-    paintPreview();
+  let previewFor = '', songs = [], queue = [], qi = 0;
+  function lookupPreview(t) {
     const pick = (j) => {
       const rs = (j && j.results) || [];
-      return (p.apple && rs.find((x) => String(x.trackId) === p.apple)) || pickResult(rs, p) || null;
+      return (t.apple && rs.find((x) => String(x.trackId) === t.apple)) || pickResult(rs, t) || null;
     };
-    const look = p.apple ? itunes('lookup?entity=song&id=' + p.apple).then(pick) : Promise.resolve(null);
-    look.then((r) => r || itunes('search?media=music&entity=song&limit=25&term=' + encodeURIComponent(p.title + ' ' + p.artist)).then(pick))
-      .then((r) => {
-        if (previewFor !== key || !r || !r.previewUrl || !/^https:\/\//.test(r.previewUrl)) return;
-        audio.src = r.previewUrl;
-        audio.load();
-        paintPreview();
-      })
-      .catch(() => { /* no preview: the record still opens and spins */ });
+    const look = t.apple ? itunes('lookup?entity=song&id=' + t.apple).then(pick) : Promise.resolve(null);
+    return look.then((r) => r || itunes('search?media=music&entity=song&limit=25&term=' + encodeURIComponent(t.title + ' ' + t.artist)).then(pick))
+      .then((r) => (r && r.previewUrl && /^https:\/\//.test(r.previewUrl) ? r.previewUrl : ''))
+      .catch(() => '');
   }
+  function findPreview(p) {
+    const key = p.tracks ? p.tracks.map(keyOf).join(',') : keyOf(p);
+    if (previewFor === key) return;
+    previewFor = key;
+    songs = p.tracks || [p];
+    queue = songs.map(() => '');
+    qi = 0;
+    audio.pause(); audio.removeAttribute('src');
+    paintPreview();
+    songs.forEach((t, i) => lookupPreview(t).then((u) => {
+      if (previewFor !== key) return;
+      queue[i] = u;
+      if (i === qi && u && !audio.getAttribute('src')) setTrack(i);
+      paintPreview();
+    }));
+  }
+  function setTrack(i) {
+    qi = i;
+    if (queue[i]) { audio.src = queue[i]; audio.load(); } else audio.removeAttribute('src');
+    // On a mixtape the record's label turns to the cover of the song that's playing.
+    if (songs.length > 1 && songs[i] && songs[i].art) document.querySelector('.record-label').style.background = 'center / cover no-repeat ' + cssURL(songs[i].art);
+    paintPreview();
+  }
+  const nextWithPreview = (from) => { for (let i = from; i < queue.length; i++) if (queue[i]) return i; return -1; };
 
   function playPreview() {
-    if (!audio.getAttribute('src')) return;
+    if (!audio.getAttribute('src')) { const n = nextWithPreview(0); if (n < 0) return; setTrack(n); }
     audio.play().catch(() => paintPreview());
   }
 
   function paintPreview() {
-    const b = $('previewBtn'), has = !!audio.getAttribute('src');
+    const b = $('previewBtn'), has = queue.some(Boolean);
     b.hidden = !opened || !has;
-    const playing = !audio.paused && !audio.ended;
+    const playing = !audio.paused && !audio.ended, mix = songs.length > 1;
     b.setAttribute('aria-pressed', String(playing));
     b.setAttribute('aria-label', playing ? 'Pause preview' : 'Play preview');
-    $('previewLabel').textContent = playing ? 'Playing preview' : audio.ended ? 'Play again' : 'Play preview';
+    $('previewLabel').textContent = playing ? (mix ? 'Playing ' + (qi + 1) + ' of ' + songs.length : 'Playing preview')
+      : audio.ended ? 'Play again' : mix ? 'Play the mixtape' : 'Play preview';
+    document.querySelectorAll('#tracklist li').forEach((li, i) => {
+      li.classList.toggle('is-playing', playing && i === qi);
+      li.classList.toggle('no-preview', !queue[i]);
+    });
   }
-  ['play', 'pause', 'ended'].forEach((ev) => audio.addEventListener(ev, paintPreview));
+  ['play', 'pause'].forEach((ev) => audio.addEventListener(ev, paintPreview));
+  // A mixtape plays on to the next song.
+  audio.addEventListener('ended', () => {
+    const n = nextWithPreview(qi + 1);
+    if (songs.length > 1 && n >= 0) { setTrack(n); audio.play().catch(() => paintPreview()); return; }
+    paintPreview();
+  });
   audio.addEventListener('timeupdate', () => {
     $('previewBar').style.transform = 'scaleX(' + (audio.duration ? audio.currentTime / audio.duration : 0) + ')';
   });
   $('previewBtn').addEventListener('click', () => {
     if (!audio.paused && !audio.ended) audio.pause();
-    else { if (audio.ended) audio.currentTime = 0; audio.play().catch(() => {}); }
+    else if (audio.ended && songs.length > 1) { setTrack(nextWithPreview(0)); audio.play().catch(() => {}); }
+    else { if (audio.ended) audio.currentTime = 0; playPreview(); }
   });
+
+  // A mixtape's tracklist: tap a song to hear it, or open it in Spotify or Apple Music.
+  function renderTracks(p) {
+    const ol = $('tracklist');
+    ol.textContent = '';
+    ol.hidden = !p.tracks;
+    $('mainActions').hidden = !!p.tracks;
+    if (!p.tracks) return;
+    p.tracks.forEach((t, i) => {
+      const li = document.createElement('li');
+      li.innerHTML = '<button type="button" class="track"><span class="track-art"></span><span class="track-text"><b></b><span></span><i></i></span><span class="track-eq" aria-hidden="true"><i></i><i></i><i></i></span></button>' +
+        '<span class="track-links"><a target="_blank" rel="noopener">Spotify</a><a target="_blank" rel="noopener">Apple</a></span>';
+      if (t.art) li.querySelector('.track-art').style.background = 'center / cover no-repeat ' + cssURL(t.art);
+      li.querySelector('b').textContent = t.title;
+      li.querySelector('.track-text span').textContent = t.artist;
+      li.querySelector('i').textContent = t.line;
+      const q = encodeURIComponent(t.title + ' ' + t.artist), [sp, ap] = li.querySelectorAll('a');
+      sp.href = t.spotify ? 'https://open.spotify.com/track/' + t.spotify : 'https://open.spotify.com/search/' + q;
+      ap.href = t.apple ? 'https://music.apple.com/song/' + t.apple : 'https://music.apple.com/search?term=' + q;
+      sp.setAttribute('aria-label', t.title + ' on Spotify'); ap.setAttribute('aria-label', t.title + ' on Apple Music');
+      li.querySelector('.track').setAttribute('aria-label', 'Play ' + t.title + ' by ' + t.artist);
+      li.querySelector('.track').addEventListener('click', () => {
+        if (i === qi && !audio.paused) { audio.pause(); return; }
+        if (!queue[i]) return;
+        setTrack(i);
+        audio.play().catch(() => paintPreview());
+      });
+      ol.appendChild(li);
+    });
+    paintPreview();
+  }
 
   // ---- Telling the sender it was opened ----
   // Once per device, and never for the sender's own copy. Nothing about who opened it is sent.
@@ -208,6 +287,36 @@
       try { localStorage.setItem('crate-opened', JSON.stringify([p.rid].concat(done).slice(0, 300))); } catch (e) {}
     }).catch(() => {});
   }
+
+  // ---- Reactions: one tap tells the sender how it landed ----
+  // Like opening, nothing about who reacted is sent. Remembered per device so the choice shows again.
+  const REACTED = 'crate-reacted';
+  function paintReact(p) {
+    const box = $('react');
+    box.hidden = !opened || !p.rid || !cfg.supabaseUrl || readCrate().some((r) => r.kind === 'sent' && r.rid === p.rid);
+    let mine = '';
+    try { mine = (JSON.parse(localStorage.getItem(REACTED)) || {})[p.rid] || ''; } catch (e) {}
+    box.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.r === mine)));
+    $('reactLabel').textContent = mine ? (p.from === 'A friend' ? 'They’ll see it' : p.from + ' will see it') : 'How did it land?';
+  }
+  $('react').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-r]'), p = params();
+    if (!b || !p.rid) return;
+    const me = (() => { try { return JSON.parse(localStorage.getItem('crate-auth')); } catch (er) { return null; } })();
+    const token = me && me.access && Date.now() < me.until ? me.access : cfg.supabaseAnonKey;
+    fetch(cfg.supabaseUrl + '/rest/v1/rpc/react_record', {
+      method: 'POST', keepalive: true,
+      headers: { apikey: cfg.supabaseAnonKey, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rid: p.rid, r: b.dataset.r }),
+    }).catch(() => {});
+    try {
+      const all = JSON.parse(localStorage.getItem(REACTED)) || {};
+      all[p.rid] = b.dataset.r;
+      localStorage.setItem(REACTED, JSON.stringify(all));
+    } catch (er) {}
+    b.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.35)' }, { transform: 'scale(1)' }], { duration: 320, easing: 'cubic-bezier(.3,1.6,.5,1)' });
+    paintReact(p);
+  });
 
   // ---- Spin: velocity eases toward 33⅓ rpm; the angle only ever accumulates ----
   let opened = false, angle = 0, vel = 0, last = 0, raf = 0;
@@ -232,6 +341,7 @@
     document.title = p.title + (p.artist ? ' · ' + p.artist : '');
     playPreview();
     paintPreview();
+    paintReact(p);
     reportOpen(p);
     last = performance.now();
     if (!raf) raf = requestAnimationFrame(tick);
@@ -240,7 +350,7 @@
   // ---- Render ----
   function render() {
     const p = params();
-    const fromLine = p.from + (p.pet ? ' & ' + p.pet : '') + ' sent you a record';
+    const fromLine = p.from + (p.pet ? ' & ' + p.pet : '') + ' sent you a ' + (p.tracks ? 'mixtape' : 'record');
     $('fromLine').textContent = fromLine;
     $('songTitle').textContent = p.title;
     $('songArtist').textContent = p.artist;
@@ -248,18 +358,35 @@
     $('spotifyLink').href = p.spotify ? 'https://open.spotify.com/track/' + p.spotify : 'https://open.spotify.com/search/' + q;
     $('appleLink').href = p.apple ? 'https://music.apple.com/song/' + p.apple : 'https://music.apple.com/search?term=' + q;
     if (p.note) $('headline').textContent = '“' + p.note + '”';
+    // Reply with a record: Make opens with their name already in To.
+    const back = p.from && p.from !== 'A friend' ? p.from : '';
+    const rq = [back ? 'to=' + encodeURIComponent(back) : '', p.rid ? 're=' + p.rid : ''].filter(Boolean).join('&');
+    $('replyLink').href = '../#/' + (rq ? '?' + rq : '');
+    $('replyLink').textContent = back ? 'Send ' + back + ' one back' : 'Send one back';
+    paintReact(p);
     showSaved(p);
     document.title = opened ? p.title + (p.artist ? ' · ' + p.artist : '') : fromLine;
     page.style.setProperty('--tint', FALLBACK_TINT);
     page.style.removeProperty('--art');
-    loadArtwork(p);
+    if (p.tracks) {
+      $('songArtist').textContent = 'Mixtape · ' + p.tracks.length + ' songs';
+      loadArtwork(Object.assign({}, p.tracks[0]));
+      const m = mosaic(p.tracks);
+      if (m) page.style.setProperty('--art', m);
+      if (p.tracks[0].art) document.querySelector('.record-label').style.background = 'center / cover no-repeat ' + cssURL(p.tracks[0].art);
+    } else {
+      document.querySelector('.record-label').style.background = '';
+      loadArtwork(p);
+    }
+    renderTracks(p);
     findPreview(p);
   }
 
   // ---- Save in Crate: the friend's own crate, kept on this device ----
   const CRATE = 'crate-records-v1';
   const readCrate = () => { try { return JSON.parse(localStorage.getItem(CRATE)) || []; } catch (e) { return []; } };
-  const idOf = (p) => (p.spotify || p.apple || (p.title + '|' + p.artist)).toLowerCase();
+  const idOf = (p) => (p.tracks ? 'mix:' + p.tracks.map((t) => t.apple || t.spotify || t.title).join(',')
+                                 : p.spotify || p.apple || p.title + '|' + p.artist).toLowerCase();
   function showSaved(p) {
     const saved = readCrate().some((r) => r.kind === 'received' && r.id === idOf(p));
     const b = $('saveBtn');
@@ -271,7 +398,8 @@
   $('saveBtn').addEventListener('click', () => {
     const p = params(), list = readCrate();
     if (!list.some((r) => r.kind === 'received' && r.id === idOf(p))) {
-      list.unshift({ id: idOf(p), kind: 'received', title: p.title, artist: p.artist, from: p.from, note: p.note,
+      list.unshift({ id: idOf(p), kind: 'received', title: p.title, artist: p.tracks ? 'Mixtape · ' + p.tracks.length + ' songs' : p.artist,
+                     from: p.from, note: p.note, tracks: p.tracks || undefined,
                      art: p.art || (readCache()[keyOf(p)] || {}).url || '', spotify: p.spotify, apple: p.apple, at: Date.now() });
       try { localStorage.setItem(CRATE, JSON.stringify(list.slice(0, 500))); } catch (e) {}
     }
