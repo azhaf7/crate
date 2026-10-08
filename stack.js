@@ -30,7 +30,7 @@
   // ---------- The sleeve stack ----------
   let pos = 0, target = 0, drag = null, outs = [], angle = 0, list = [], slabs = [], last = performance.now(), focus = -1;
   const VISIBLE = 7;   // sleeves further than this from the front aren't drawn at all
-  const FILTERS = [['all', 'All', '#141210'], ['favs', 'Favorites', '#ff5a6e'], ['received', 'From friends', '#7a5cff'], ['sent', 'Sent', '#0a84ff']];
+  const FILTERS = [['all', 'All'], ['favs', 'Favorites'], ['received', 'From friends'], ['sent', 'Sent']];
   const FAVS = 'crate-favs';
   const favs = () => { try { return JSON.parse(localStorage.getItem(FAVS)) || {}; } catch (e) { return {}; } };
   const favKey = (r) => r.kind + ':' + (r.rid || r.id);
@@ -38,8 +38,8 @@
   function stackList() { const c = A().crate(), f = filter(); if (f === 'all') return c; if (f === 'favs') { const F = favs(); return c.filter((r) => F[favKey(r)]); } return c.filter((r) => r.kind === f); }
   function renderStack() {
     const chips = $('stackChips'); chips.textContent = '';
-    FILTERS.forEach(([k, label, col]) => {
-      const b = el('<button class="chip" type="button"></button>'); b.textContent = label; b.style.setProperty('--c', col);
+    FILTERS.forEach(([k, label]) => {
+      const b = el('<button class="chip" type="button"></button>'); b.textContent = label;
       b.setAttribute('aria-pressed', String(filter() === k));
       b.addEventListener('click', () => { pos = target = 0; A().setKind(k); });
       chips.appendChild(b);
@@ -52,7 +52,7 @@
       const s = el('<div class="slab"><div class="slab-rec"></div><div class="slab-spine bottom"></div><div class="slab-spine top"></div><div class="slab-art"></div></div>');
       s.dataset.i = i;
       s.style.setProperty('--a', A().coverCSS ? A().coverCSS(r) : A().artCSS(r.art));
-      const tc = tint(r.art, paintTints); if (tc) s.style.setProperty('--edge', 'color-mix(in oklch, ' + tc + ' 40%, #e9e2d6)');
+      const tc = tint(r.art, paintTints); if (tc) s.style.setProperty('--edge', 'color-mix(in oklch, ' + tc + ' 40%, #efe6d6)');
       st.appendChild(s);
       slabs.push(s);
     });
@@ -65,7 +65,7 @@
     focus = -1;
   }
   function paintTints() {
-    slabs.forEach((s, i) => { const r = list[i]; const tc = r && tints[r.art]; if (tc) s.style.setProperty('--edge', 'color-mix(in oklch, ' + tc + ' 40%, #e9e2d6)'); });
+    slabs.forEach((s, i) => { const r = list[i]; const tc = r && tints[r.art]; if (tc) s.style.setProperty('--edge', 'color-mix(in oklch, ' + tc + ' 40%, #efe6d6)'); });
     focus = -1;
   }
   const clamp = (v) => Math.max(0, Math.min(list.length - 1, v));

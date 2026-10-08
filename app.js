@@ -737,7 +737,7 @@
     $('makeEmpty').hidden = false;
     $('hero-title').textContent = 'Make a Record';
     $('sTitle').textContent = 'Nothing pressed yet';
-    $('sArtist').textContent = 'Search, or paste a Spotify or Apple Music link';
+    $('sArtist').textContent = 'Search or paste a link';
     $('studio').hidden = true;
     $('to').value = ''; $('note').value = '';
     $('noteIdeas').textContent = '';

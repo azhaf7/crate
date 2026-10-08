@@ -1,15 +1,24 @@
 /* Crate: warm paper, black ink, records in the cover's own colour, playful stickers. */
 :root {
-  --bg: #f4f2ee;
-  --surface: #ffffff;
-  --ink: #141210;
-  --ink2: rgba(20, 18, 16, 0.6);
-  --accent: #141210;
-  --accent-ink: #f4f2ee;
-  --pop: #ff5a6e;
-  --violet: #7a5cff;
-  --nav: rgba(248, 247, 244, 0.86);
-  --line: rgba(20, 18, 16, 0.1);
+  /* The record-shop palette, taken from the icon: aged sleeve cream, record-shop green, a vermilion
+     label, sticker yellow, and vinyl black. Text colours all meet WCAG AA on the paper. */
+  --bg: #f1e9dc;            /* aged sleeve paper */
+  --surface: #fbf7f0;       /* inner sleeve */
+  --chip: #e4dac8;
+  --ink: #17221d;           /* green-black, like the lettering on the icon */
+  --ink2: #4f5a53;
+  --ink3: #626c66;          /* small captions; still 4.5:1 */
+  --placeholder: #7f8780;
+  --accent: #1f3d2e;        /* record-shop green: primary buttons, the current tab */
+  --accent-ink: #f6efe3;
+  --label: #dc4a26;         /* the record's vermilion label: fills and icons */
+  --label-ink: #b13a17;     /* vermilion for text and badges */
+  --gold: #e2b04a;          /* sticker yellow: Ask Crate and the other AI helpers */
+  --gold-ink: #7a530e;
+  --gold-tint: #f4e4c1;
+  --error: #b3261e;
+  --nav: rgba(248, 243, 234, 0.88);
+  --line: rgba(23, 34, 29, 0.12);
   --groove: repeating-conic-gradient(from 10deg, rgba(255,255,255,0.06) 0deg 45deg, rgba(0,0,0,0) 45deg 90deg), repeating-radial-gradient(circle, #101012 0 1.1px, #1c1c20 1.5px, #101012 2.3px);
   --art: linear-gradient(150deg, oklch(0.72 0.12 40), oklch(0.42 0.1 80));
   --ease: cubic-bezier(.22, 1, .36, 1);
@@ -33,7 +42,7 @@ a { color: inherit; }
 .h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
 .sub { margin: 4px 0 0; color: var(--ink2); }
 
-.badge { position: absolute; top: 2px; right: 4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--pop); color: #fff; box-shadow: 0 0 0 2px var(--bg); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.badge { position: absolute; top: 2px; right: 4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--label-ink); color: #fff; box-shadow: 0 0 0 2px var(--bg); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 
 /* ---- Buttons and fields ---- */
 .btn { height: 48px; padding: 0 20px; border: none; border-radius: 24px; font-weight: 600; cursor: pointer; }
@@ -47,7 +56,7 @@ a { color: inherit; }
 .pill { height: 36px; padding: 0 16px; border: none; border-radius: 17px; font-size: 14px; font-weight: 600; cursor: pointer; flex: none; }
 .field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--ink2); }
 .field input { width: 100%; min-width: 0; height: 46px; padding: 0 12px; border: none; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 0.5px var(--line); font-size: 16px; font-weight: 400; color: var(--ink); }
-input::placeholder { color: rgba(20, 18, 16, 0.38); }
+input::placeholder { color: var(--placeholder); }
 .field i { font-style: normal; font-weight: 400; opacity: 0.7; }
 
 /* ---- Make: the record card, with the disc sliding out behind it ---- */
@@ -80,7 +89,7 @@ input::placeholder { color: rgba(20, 18, 16, 0.38); }
 .paste > svg { width: 17px; height: 17px; flex: none; fill: none; stroke: var(--ink2); stroke-width: 2; stroke-linecap: round; }
 .paste input { flex: 1; min-width: 0; height: 36px; border: none; background: transparent; font-size: 16px; color: var(--ink); outline: none; }
 .status { min-height: 20px; margin: 8px 2px 0; font-size: 13px; color: var(--ink2); }
-.status.error { color: #d2283e; }
+.status.error { color: var(--error); }
 .manual { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
 .hint { margin: 0; font-size: 13px; color: var(--ink2); }
 
@@ -104,13 +113,13 @@ input::placeholder { color: rgba(20, 18, 16, 0.38); }
 .tile:hover .sleeve-art, .rec:hover .sleeve-art { transform: scale(1.03); }
 .tile-title, .rec-title { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tile-meta, .rec-meta { margin-top: -3px; font-size: 13px; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.opened { color: var(--pop); font-weight: 600; }
+.opened { color: var(--label-ink); font-weight: 600; }
 
 /* ---- Records ---- */
 .seg { display: grid; grid-template-columns: 1fr 1fr; padding: 3px; margin: 14px 0 18px; border-radius: 10px; background: var(--surface); }
-.seg button { height: 34px; border: none; border-radius: 8px; background: transparent; color: var(--ink2); font-weight: 600; cursor: pointer; }
+.seg button { height: 40px; border: none; border-radius: 8px; background: transparent; color: var(--ink2); font-weight: 600; cursor: pointer; }
 .seg button[aria-selected="true"] { background: var(--ink); color: var(--bg); }
-.seg { background: rgba(20, 18, 16, 0.06); }
+.seg { background: var(--chip); }
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 14px; }
 .rec { position: relative; display: flex; flex-direction: column; gap: 5px; text-decoration: none; color: var(--ink); animation: rise 400ms var(--ease) both; }
 .rec .tile-art { width: 100%; height: auto; aspect-ratio: 1; }
@@ -149,17 +158,17 @@ input::placeholder { color: rgba(20, 18, 16, 0.38); }
 /* ---- Email sign-in, at the foot of Records ---- */
 .account.card { margin-top: 28px; }
 .account.in { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 28px; font-size: 13px; color: var(--ink2); }
-.inline { display: flex; gap: 8px; align-items: center; height: 46px; padding: 0 6px 0 12px; border-radius: 12px; background: #f4f2ee; box-shadow: inset 0 0 0 0.5px var(--line); }
+.inline { display: flex; gap: 8px; align-items: center; height: 46px; padding: 0 6px 0 12px; border-radius: 12px; background: var(--bg); box-shadow: inset 0 0 0 0.5px var(--line); }
 .inline input { flex: 1; min-width: 0; height: 36px; border: none; background: transparent; font-size: 16px; color: var(--ink); outline: none; }
 .inline .pill:disabled { opacity: 0.6; }
 .ac-msg { min-height: 18px; margin: 8px 0 0 !important; font-size: 13px; }
-.ac-msg.error { color: #d2283e !important; }
+.ac-msg.error { color: var(--error) !important; }
 .link { padding: 0; border: none; background: none; color: var(--ink); font-weight: 600; font-size: 13px; cursor: pointer; }
 
 /* ---- The name, with a small record spinning after it ---- */
 .brand { display: flex; align-items: center; gap: 10px; }
 .mini-disc { width: 26px; height: 26px; flex: none; border-radius: 50%;
-  background: radial-gradient(circle, #0a0a0b 0 7%, var(--pop) 8% 30%, #111113 31% 34%, transparent 35%), var(--groove);
+  background: radial-gradient(circle, #0a0a0b 0 7%, var(--label) 8% 30%, #111113 31% 34%, transparent 35%), var(--groove);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 2px 6px rgba(0, 0, 0, 0.4); animation: spin 2.4s linear infinite; position: relative; }
 .mini-disc::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 30deg, transparent 0 40deg, rgba(255, 255, 255, 0.18) 60deg, transparent 80deg 220deg, rgba(255, 255, 255, 0.1) 240deg, transparent 260deg); }
 
@@ -173,7 +182,7 @@ input::placeholder { color: rgba(20, 18, 16, 0.38); }
 .tab { position: relative; }
 
 /* ---- Send sheet: the phone's share list, or copy the link ---- */
-.sheet { width: min(440px, 100%); max-width: 100%; margin: auto auto 0; padding: 10px 20px calc(20px + env(safe-area-inset-bottom)); border: none; border-radius: 28px 28px 0 0; background: #f8f7f4; color: var(--ink); box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5); }
+.sheet { width: min(440px, 100%); max-width: 100%; margin: auto auto 0; padding: 10px 20px calc(20px + env(safe-area-inset-bottom)); border: none; border-radius: 28px 28px 0 0; background: var(--bg); color: var(--ink); box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5); }
 .sheet[open] { animation: sheet-up 380ms var(--ease) both; }
 .sheet::backdrop { background: rgba(10, 9, 8, 0.4); backdrop-filter: blur(2px); }
 @keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
@@ -185,21 +194,21 @@ input::placeholder { color: rgba(20, 18, 16, 0.38); }
 .sheet-text h2 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
 .sheet-text p { margin: 2px 0 0; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sheet-actions { display: flex; flex-direction: column; gap: 10px; }
-.sheet-actions .btn:not(.accent) { background: #fff; }
+.sheet-actions .btn:not(.accent) { background: var(--surface); }
 .sheet-note { min-height: 20px; margin: 12px 0 0; text-align: center; font-size: 14px; color: var(--ink2); }
 .sheet-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
 .sheet-foot .link { font-size: 15px; min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; }
-.tab[aria-current="page"] .badge { background: var(--pop); color: #fff; box-shadow: 0 0 0 2px var(--accent); }
+.tab[aria-current="page"] .badge { background: var(--label-ink); color: #fff; box-shadow: 0 0 0 2px var(--accent); }
 
 /* ---- Ask Crate: describe someone, Claude picks songs ---- */
 .ask { margin-top: 2px; }
-.ask-open { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 46px; padding: 0 14px; border: none; border-radius: 12px; background: linear-gradient(120deg, color-mix(in oklch, var(--violet) 12%, var(--surface)), var(--surface) 70%); box-shadow: inset 0 0 0 0.5px var(--line); color: var(--ink2); font-size: 14px; text-align: left; cursor: pointer; }
+.ask-open { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 46px; padding: 0 14px; border: none; border-radius: 12px; background: linear-gradient(120deg, var(--gold-tint), var(--surface) 70%); box-shadow: inset 0 0 0 0.5px var(--line); color: var(--ink2); font-size: 14px; text-align: left; cursor: pointer; }
 .ask-open b { color: var(--ink); font-weight: 700; }
 .ask-open[aria-expanded="true"] { border-radius: 12px 12px 0 0; }
-.spark { color: var(--violet); font-size: 16px; }
+.spark { color: var(--gold-ink); font-size: 16px; }
 .ask-form { display: flex; align-items: center; gap: 8px; height: 50px; padding: 0 6px 0 12px; border-radius: 0 0 12px 12px; background: var(--surface); box-shadow: inset 0 0 0 0.5px var(--line); animation: rise 300ms var(--ease) both; }
 .ask-form input { flex: 1; min-width: 0; height: 36px; border: none; background: transparent; font-size: 16px; color: var(--ink); outline: none; }
-.ask-form .pill { background: var(--violet); color: #fff; }
+.ask-form .pill { background: var(--gold); color: var(--ink); }
 .ask-form .pill:disabled { opacity: 0.6; }
 .ask-rows .row { animation: rise 380ms var(--ease) both; }
 .ask-rows .row:nth-child(2) { animation-delay: 60ms; } .ask-rows .row:nth-child(3) { animation-delay: 120ms; }
@@ -207,17 +216,17 @@ input::placeholder { color: rgba(20, 18, 16, 0.38); }
 
 /* ---- Note: "Write it for me" and the three ideas ---- */
 .note-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 26px; }
-.ai-pill { height: 26px; padding: 0 10px; border: none; border-radius: 13px; background: color-mix(in oklch, var(--violet) 14%, transparent); color: var(--violet); font-size: 12px; font-weight: 700; cursor: pointer; }
+.ai-pill { position: relative; height: 30px; padding: 0 12px; border: none; border-radius: 15px; background: var(--gold-tint); color: var(--gold-ink); font-size: 12px; font-weight: 700; cursor: pointer; }
 .ai-pill.busy { animation: breathe 1.2s ease-in-out infinite; }
 .ai-pill:disabled { cursor: progress; }
 .note-ideas { display: flex; flex-direction: column; gap: 6px; }
 .note-ideas:empty { display: none; }
-.idea { padding: 10px 12px; border: none; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--violet) 30%, transparent); color: var(--ink); font-size: 14px; font-weight: 400; text-align: left; cursor: pointer; animation: rise 320ms var(--ease) both; }
-.idea:hover { background: color-mix(in oklch, var(--violet) 6%, var(--surface)); }
+.idea { padding: 10px 12px; border: none; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--gold) 60%, transparent); color: var(--ink); font-size: 14px; font-weight: 400; text-align: left; cursor: pointer; animation: rise 320ms var(--ease) both; }
+.idea:hover { background: var(--gold-tint); }
 .note-ideas .status { margin: 0; }
 .ask-ideas { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.ask-ideas .chip { height: 30px; padding: 0 12px; border: none; border-radius: 15px; background: color-mix(in oklch, var(--violet) 10%, var(--surface)); color: var(--ink); font-size: 13px; font-weight: 500; cursor: pointer; box-shadow: inset 0 0 0 0.5px var(--line); }
-.ask-ideas .chip:hover { background: color-mix(in oklch, var(--violet) 18%, var(--surface)); }
+.ask-ideas .chip { height: 30px; padding: 0 12px; border: none; border-radius: 15px; background: var(--gold-tint); color: var(--ink); font-size: 13px; font-weight: 500; cursor: pointer; box-shadow: inset 0 0 0 0.5px var(--line); }
+.ask-ideas .chip:hover { background: color-mix(in oklch, var(--gold) 45%, var(--surface)); }
 .sheet-actions .btn:disabled { opacity: 0.5; cursor: progress; }
 
 /* ---- Records: how your records are landing ---- */
@@ -242,25 +251,39 @@ input::placeholder { color: rgba(20, 18, 16, 0.38); }
 .mix-list .row-text b, .mix-list .row-text span, .mix-list .row-text i { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mix-list .row-text b { font-size: 14px; font-weight: 600; }
 .mix-list .row-text span { font-size: 12px; color: var(--ink2); }
-.mix-list .row-text i { font-size: 12px; font-style: normal; color: var(--violet); }
+.mix-list .row-text i { font-size: 12px; font-style: normal; color: var(--gold-ink); }
 .mix-list button { width: 32px; height: 32px; flex: none; border: none; border-radius: 16px; background: transparent; color: var(--ink2); font-size: 16px; cursor: pointer; }
 .mix-list button:hover { background: var(--bg); color: var(--ink); }
 .mix-list button:disabled { visibility: hidden; }
 
 /* ---- Crate Wrapped: your week in records ---- */
 .wrap { position: relative; margin-top: 24px; padding: 18px 18px 14px; border-radius: 22px; overflow: hidden; color: #fff;
-  background: radial-gradient(120% 90% at 0% 0%, #7a5cff 0%, transparent 60%), radial-gradient(90% 90% at 100% 100%, #ff5a6e 0%, transparent 55%), #1b1530;
-  box-shadow: 0 14px 36px rgba(40, 20, 90, 0.28); }
+  background: radial-gradient(110% 90% at 0% 0%, #2c5541 0%, transparent 60%), radial-gradient(80% 90% at 100% 100%, rgba(220, 74, 38, 0.55) 0%, transparent 60%), #1d3a2b;
+  box-shadow: 0 14px 36px rgba(15, 31, 25, 0.3); }
 .wrap::after { content: ''; position: absolute; right: -60px; top: -60px; width: 180px; height: 180px; border-radius: 50%; opacity: 0.35; pointer-events: none;
   background: radial-gradient(circle, #0a0a0b 0 6%, transparent 7%), repeating-radial-gradient(circle, #101012 0 1.1px, #24242a 1.5px, #101012 2.3px); }
 .wrap > * { position: relative; z-index: 1; }
 .wrap-kicker { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 255, 255, 0.72); }
 .wrap h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; text-wrap: balance; }
 .wrap-sum { margin: 0 0 14px; font-size: 15px; line-height: 1.45; color: rgba(255, 255, 255, 0.88); text-wrap: pretty; }
-.wrap .pill.accent { background: #fff; color: #1b1530; }
+.wrap .pill.accent { background: var(--gold); color: var(--ink); }
 .wrap .ac-msg { color: rgba(255, 255, 255, 0.8); }
-.wrap .ac-msg.error { color: #ffd0d6 !important; }
+.wrap .ac-msg.error { color: #ffd9cc !important; }
 .wrap-vibes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .wrap-vibes span { padding: 5px 11px; border-radius: 14px; background: rgba(255, 255, 255, 0.16); font-size: 13px; font-weight: 600; }
 .wrap-foot { display: flex; justify-content: space-between; }
 .wrap .link { color: #fff; min-height: 36px; }
+
+/* ---- Usability: visible keyboard focus and 44px tap targets ---- */
+/* Fields that hide the browser's outline show focus on their whole box instead. */
+.paste:focus-within, .ask-form:focus-within, .inline:focus-within { box-shadow: inset 0 0 0 2px var(--accent); }
+.field input:focus-visible, .mix-name:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+/* Small controls keep their look but get an invisible 44px hit area. */
+.ai-pill::after, .mix-list button::after, .rec-remove::after, .ask-ideas .chip::after { content: ''; position: absolute; inset: -7px; }
+.mix-list button, .ask-ideas .chip { position: relative; }
+.mix-list button::after { inset: -4px; }
+.mix-list button { width: 36px; height: 36px; border-radius: 18px; }
+.ask-ideas .chip { height: 34px; padding: 0 14px; }
+.pill { height: 38px; }
+.wrap .link, .account .link { min-height: 44px; }
+@media (prefers-reduced-motion: reduce) { .ai-pill.busy { animation: none; opacity: 0.7; } }

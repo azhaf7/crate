@@ -8,8 +8,9 @@
 .stack-glow { position: absolute !important; left: -20px; right: -20px; top: 60px; height: 640px; pointer-events: none; transition: background 700ms ease; }
 .chips { display: flex; gap: 8px; overflow-x: auto; margin: 12px -20px 0; padding: 0 20px; scrollbar-width: none; }
 .chips::-webkit-scrollbar { display: none; }
-.chip { flex: none; height: 32px; padding: 0 14px; border: none; border-radius: 16px; background: rgba(20, 18, 16, 0.06); color: var(--ink); font-size: 13px; font-weight: 600; cursor: pointer; transition: background 160ms, color 160ms; }
-.chip[aria-pressed="true"] { background: var(--c, var(--ink)); color: #fff; }
+.chip { position: relative; flex: none; height: 36px; padding: 0 16px; border: none; border-radius: 18px; background: var(--chip); color: var(--ink); font-size: 13px; font-weight: 600; cursor: pointer; transition: background 160ms, color 160ms; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.chip::after { content: ''; position: absolute; inset: -4px 0; }
 .stack { height: 470px; margin: 12px -20px 0; perspective: 900px; overflow: hidden; touch-action: pan-x; cursor: grab; user-select: none; outline: none;
   -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 12%, #000 86%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0%, #000 12%, #000 86%, transparent 100%); }
 .stack:active { cursor: grabbing; }
@@ -37,15 +38,15 @@
 .stack-info { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; margin: 8px 4px 0; }
 .stack-info b { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stack-info span { font-size: 14px; color: var(--ink2); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.stack-info small { font-size: 11px; font-weight: 600; color: rgba(20, 18, 16, 0.45); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stack-info small { font-size: 12px; font-weight: 600; color: var(--ink3); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stack-info small:empty { display: none; }
 .stack-info.is-empty { margin: 28px 0 8px; }
 .stack-info.is-empty span { white-space: normal; text-wrap: pretty; }
 .stack-actions { display: flex; gap: 10px; margin: 12px 4px 0; }
 .stack-actions .btn { flex: 1; height: 48px; border-radius: 24px; font-size: 15px; }
-.fav { width: 48px; height: 48px; flex: none; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; background: #fff; color: rgba(20, 18, 16, 0.3); box-shadow: 0 0 0 1px rgba(20, 18, 16, 0.1) inset; transition: background 160ms, color 160ms, transform 160ms; }
+.fav { width: 48px; height: 48px; flex: none; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; background: var(--surface); color: var(--ink3); box-shadow: 0 0 0 1px var(--line) inset; transition: background 160ms, color 160ms, transform 160ms; }
 .fav:active { transform: scale(0.9); }
-.fav[aria-pressed="true"] { background: var(--ink); color: #ff5a6e; }
+.fav[aria-pressed="true"] { background: var(--accent); color: var(--label); }
 .grid-head { margin: 4px 0 12px; }
 
 /* ---- Library: one card per music service ---- */
@@ -57,7 +58,10 @@
 .src .pill { height: 32px; font-size: 13px; }
 .card.slim { padding: 14px 16px 4px; }
 .card p b { font-weight: 600; color: var(--ink); }
-.rows .row { border-bottom-color: rgba(20, 18, 16, 0.08); }
+.rows .row { border-bottom-color: var(--line); }
 .row img, .row .ph { border-radius: 3px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
 
 @media (prefers-reduced-motion: reduce) { .slab { transition: none !important; } }
+
+/* The stack takes arrow keys; show where focus is. */
+.stack:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 12px; }
