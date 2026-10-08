@@ -16,7 +16,7 @@ function recordHash(rec) {
 
 function page({ title, description, image, url, go }) {
   return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">' +
-    '<meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#0f1813">' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#000000">' +
     '<title>' + esc(title) + '</title><meta name="description" content="' + esc(description) + '">' +
     '<meta property="og:type" content="music.song"><meta property="og:site_name" content="Crate">' +
     '<meta property="og:title" content="' + esc(title) + '"><meta property="og:description" content="' + esc(description) + '">' +
@@ -26,8 +26,8 @@ function page({ title, description, image, url, go }) {
     '<meta name="twitter:title" content="' + esc(title) + '"><meta name="twitter:description" content="' + esc(description) + '">' +
     (image ? '<meta name="twitter:image" content="' + esc(image) + '">' : '') +
     '<script>location.replace(' + JSON.stringify(go).replace(/</g, '\\u003c') + ')</script>' +
-    '</head><body style="background:#0f1813;color:#fff;font:16px -apple-system,sans-serif;text-align:center;padding:40vh 20px 0">' +
-    '<a href="' + esc(go) + '" style="color:#e3c9a0">Open the record</a></body></html>';
+    '</head><body style="background:#000000;color:#fff;font:16px -apple-system,sans-serif;text-align:center;padding:40vh 20px 0">' +
+    '<a href="' + esc(go) + '" style="color:#ffd60a">Open the record</a></body></html>';
 }
 
 export default async function handler(req, res) {

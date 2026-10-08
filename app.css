@@ -1,28 +1,51 @@
 /* Crate: warm paper, black ink, records in the cover's own colour, playful stickers. */
 :root {
-  /* The record-shop palette, taken from the icon: aged sleeve cream, record-shop green, a vermilion
-     label, sticker yellow, and vinyl black. Text colours all meet WCAG AA on the paper. */
-  --bg: #f1e9dc;            /* aged sleeve paper */
-  --surface: #fbf7f0;       /* inner sleeve */
-  --chip: #e4dac8;
-  --ink: #17221d;           /* green-black, like the lettering on the icon */
-  --ink2: #4f5a53;
-  --ink3: #626c66;          /* small captions; still 4.5:1 */
-  --placeholder: #7f8780;
-  --accent: #1f3d2e;        /* record-shop green: primary buttons, the current tab */
-  --accent-ink: #f6efe3;
-  --label: #dc4a26;         /* the record's vermilion label: fills and icons */
-  --label-ink: #b13a17;     /* vermilion for text and badges */
-  --gold: #e2b04a;          /* sticker yellow: Ask Crate and the other AI helpers */
-  --gold-ink: #7a530e;
-  --gold-tint: #f4e4c1;
-  --error: #b3261e;
-  --nav: rgba(248, 243, 234, 0.88);
-  --line: rgba(23, 34, 29, 0.12);
+  /* Apple's system colours, as in Music: grouped grey, white cards, black text, one red tint.
+     Red is used two ways: Apple Music's red for icons and fills, and Apple's accessible system red for
+     buttons and text, so every text colour meets WCAG AA. Grey labels use the increased-contrast strength. */
+  --bg: #f2f2f7;                          /* systemGroupedBackground */
+  --surface: #ffffff;                     /* secondarySystemGroupedBackground */
+  --chip: rgba(118, 118, 128, 0.12);      /* tertiarySystemFill */
+  --ink: #000000;                         /* label */
+  --ink2: rgba(60, 60, 67, 0.78);         /* secondaryLabel, increased contrast */
+  --ink3: rgba(60, 60, 67, 0.78);
+  --placeholder: rgba(60, 60, 67, 0.6);
+  --accent: #d81b3a;                      /* buttons, the current tab */
+  --accent-ink: #ffffff;
+  --accent-text: #d81b3a;                 /* red text and links */
+  --label: #fa2d48;                       /* Apple Music red: the record label, hearts, dots */
+  --label-ink: #d81b3a;
+  --error: #d70015;
+  --nav: rgba(249, 249, 249, 0.86);
+  --line: rgba(60, 60, 67, 0.18);
+  --wrap-bg: #1c1c1e;
+  --sleeve: linear-gradient(160deg, #fbfbfd, #e9e9ee);
+  --sleeve-ink: #1c1c1e;
   --groove: repeating-conic-gradient(from 10deg, rgba(255,255,255,0.06) 0deg 45deg, rgba(0,0,0,0) 45deg 90deg), repeating-radial-gradient(circle, #101012 0 1.1px, #1c1c20 1.5px, #101012 2.3px);
-  --art: linear-gradient(150deg, oklch(0.72 0.12 40), oklch(0.42 0.1 80));
+  --art: linear-gradient(150deg, #8e8e93, #3a3a3c);
   --ease: cubic-bezier(.22, 1, .36, 1);
   --spring: cubic-bezier(.3, 1.6, .5, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --surface: #1c1c1e;
+    --chip: rgba(118, 118, 128, 0.24);
+    --ink: #ffffff;
+    --ink2: rgba(235, 235, 245, 0.7);
+    --ink3: rgba(235, 235, 245, 0.7);
+    --placeholder: rgba(235, 235, 245, 0.45);
+    --accent: #d81b3a;
+    --accent-text: #ff375f;               /* systemPink, dark: readable red on black */
+    --label: #ff375f;
+    --label-ink: #ff375f;
+    --error: #ff453a;
+    --nav: rgba(30, 30, 30, 0.86);
+    --line: rgba(84, 84, 88, 0.6);
+    --wrap-bg: #2c2c2e;
+    --sleeve: linear-gradient(160deg, #3a3a3c, #232325);
+    --sleeve-ink: #ffffff;
+  }
 }
 
 * { box-sizing: border-box; }
@@ -42,7 +65,7 @@ a { color: inherit; }
 .h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
 .sub { margin: 4px 0 0; color: var(--ink2); }
 
-.badge { position: absolute; top: 2px; right: 4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--label-ink); color: #fff; box-shadow: 0 0 0 2px var(--bg); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.badge { position: absolute; top: 2px; right: 4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent); color: #fff; box-shadow: 0 0 0 2px var(--bg); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 
 /* ---- Buttons and fields ---- */
 .btn { height: 48px; padding: 0 20px; border: none; border-radius: 24px; font-weight: 600; cursor: pointer; }
@@ -77,7 +100,17 @@ input::placeholder { color: var(--placeholder); }
 @keyframes pop { from { transform: scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
 .card-art { width: 250px; height: 210px; background: var(--surface); transition: background 400ms; }
 .card-empty { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--ink2); font-size: 14px; }
-.card-empty svg { width: 44px; height: 44px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+/* The empty card is a plain house sleeve: printed card with a die-cut hole showing the record's label. */
+.house-sleeve { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--sleeve); color: var(--sleeve-ink); }
+.house-sleeve::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.35; mix-blend-mode: multiply;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.hs-hole { position: absolute; left: 50%; top: 50%; width: 122px; height: 122px; margin: -61px 0 0 -61px; border-radius: 50%; background: var(--groove);
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.55), 0 1px 0 rgba(255, 255, 255, 0.5); display: flex; align-items: center; justify-content: center; }
+.hs-label { width: 50px; height: 50px; border-radius: 50%; background: radial-gradient(circle, #0a0a0b 0 6%, transparent 7%), var(--label);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.85); }
+.hs-brand { position: absolute; left: 14px; bottom: 10px; font-size: 22px; font-weight: 800; letter-spacing: -0.04em; }
+.hs-meta { position: absolute; right: 14px; top: 12px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.6; }
+.hs-meta.l { left: 14px; right: auto; }
 .card-band { height: 82px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; }
 .card-text { flex: 1; min-width: 0; }
 .card-title { font-size: 17px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -113,7 +146,7 @@ input::placeholder { color: var(--placeholder); }
 .tile:hover .sleeve-art, .rec:hover .sleeve-art { transform: scale(1.03); }
 .tile-title, .rec-title { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tile-meta, .rec-meta { margin-top: -3px; font-size: 13px; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.opened { color: var(--label-ink); font-weight: 600; }
+.opened { color: var(--accent-text); font-weight: 600; }
 
 /* ---- Records ---- */
 .seg { display: grid; grid-template-columns: 1fr 1fr; padding: 3px; margin: 14px 0 18px; border-radius: 10px; background: var(--surface); }
@@ -173,8 +206,7 @@ input::placeholder { color: var(--placeholder); }
 .mini-disc::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 30deg, transparent 0 40deg, rgba(255, 255, 255, 0.18) 60deg, transparent 80deg 220deg, rgba(255, 255, 255, 0.1) 240deg, transparent 260deg); }
 
 /* ---- While a link is being read ---- */
-.stage.loading .card-empty { animation: breathe 1.2s ease-in-out infinite; }
-.stage.loading .card-empty span::after { content: '…'; }
+.stage.loading .hs-hole { animation: spin 1.4s linear infinite; }
 @keyframes breathe { 50% { opacity: 0.45; } }
 .studio .btn.big { margin-top: 6px; }
 
@@ -198,17 +230,18 @@ input::placeholder { color: var(--placeholder); }
 .sheet-note { min-height: 20px; margin: 12px 0 0; text-align: center; font-size: 14px; color: var(--ink2); }
 .sheet-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
 .sheet-foot .link { font-size: 15px; min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; }
-.tab[aria-current="page"] .badge { background: var(--label-ink); color: #fff; box-shadow: 0 0 0 2px var(--accent); }
+.tab[aria-current="page"] .badge { background: #fff; color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
 
 /* ---- Ask Crate: describe someone, Claude picks songs ---- */
 .ask { margin-top: 2px; }
-.ask-open { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 46px; padding: 0 14px; border: none; border-radius: 12px; background: linear-gradient(120deg, var(--gold-tint), var(--surface) 70%); box-shadow: inset 0 0 0 0.5px var(--line); color: var(--ink2); font-size: 14px; text-align: left; cursor: pointer; }
-.ask-open b { color: var(--ink); font-weight: 700; }
+.ask-open { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 46px; padding: 0 14px; border: none; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 0.5px var(--line); color: var(--ink2); font-size: 15px; text-align: left; cursor: pointer; }
+.ask-open::after { content: '›'; margin-left: auto; font-size: 22px; line-height: 1; color: var(--ink3); transition: transform 200ms var(--ease); }
+.ask-open[aria-expanded="true"]::after { transform: rotate(90deg); }
+.ask-open b { color: var(--accent-text); font-weight: 600; }
 .ask-open[aria-expanded="true"] { border-radius: 12px 12px 0 0; }
-.spark { color: var(--gold-ink); font-size: 16px; }
 .ask-form { display: flex; align-items: center; gap: 8px; height: 50px; padding: 0 6px 0 12px; border-radius: 0 0 12px 12px; background: var(--surface); box-shadow: inset 0 0 0 0.5px var(--line); animation: rise 300ms var(--ease) both; }
 .ask-form input { flex: 1; min-width: 0; height: 36px; border: none; background: transparent; font-size: 16px; color: var(--ink); outline: none; }
-.ask-form .pill { background: var(--gold); color: var(--ink); }
+.ask-form .pill { background: var(--accent); color: var(--accent-ink); }
 .ask-form .pill:disabled { opacity: 0.6; }
 .ask-rows .row { animation: rise 380ms var(--ease) both; }
 .ask-rows .row:nth-child(2) { animation-delay: 60ms; } .ask-rows .row:nth-child(3) { animation-delay: 120ms; }
@@ -216,17 +249,17 @@ input::placeholder { color: var(--placeholder); }
 
 /* ---- Note: "Write it for me" and the three ideas ---- */
 .note-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 26px; }
-.ai-pill { position: relative; height: 30px; padding: 0 12px; border: none; border-radius: 15px; background: var(--gold-tint); color: var(--gold-ink); font-size: 12px; font-weight: 700; cursor: pointer; }
+.ai-pill { position: relative; height: 30px; padding: 0 2px; border: none; background: none; color: var(--accent-text); font-size: 13px; font-weight: 600; cursor: pointer; }
 .ai-pill.busy { animation: breathe 1.2s ease-in-out infinite; }
 .ai-pill:disabled { cursor: progress; }
 .note-ideas { display: flex; flex-direction: column; gap: 6px; }
 .note-ideas:empty { display: none; }
-.idea { padding: 10px 12px; border: none; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--gold) 60%, transparent); color: var(--ink); font-size: 14px; font-weight: 400; text-align: left; cursor: pointer; animation: rise 320ms var(--ease) both; }
-.idea:hover { background: var(--gold-tint); }
+.idea { padding: 10px 12px; border: none; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 0.5px var(--line); color: var(--ink); font-size: 14px; font-weight: 400; text-align: left; cursor: pointer; animation: rise 320ms var(--ease) both; }
+.idea:hover { background: var(--chip); }
 .note-ideas .status { margin: 0; }
 .ask-ideas { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.ask-ideas .chip { height: 30px; padding: 0 12px; border: none; border-radius: 15px; background: var(--gold-tint); color: var(--ink); font-size: 13px; font-weight: 500; cursor: pointer; box-shadow: inset 0 0 0 0.5px var(--line); }
-.ask-ideas .chip:hover { background: color-mix(in oklch, var(--gold) 45%, var(--surface)); }
+.ask-ideas .chip { height: 30px; padding: 0 12px; border: none; border-radius: 15px; background: var(--chip); color: var(--ink); font-size: 13px; font-weight: 500; cursor: pointer; }
+.ask-ideas .chip:hover { background: var(--line); }
 .sheet-actions .btn:disabled { opacity: 0.5; cursor: progress; }
 
 /* ---- Records: how your records are landing ---- */
@@ -251,24 +284,24 @@ input::placeholder { color: var(--placeholder); }
 .mix-list .row-text b, .mix-list .row-text span, .mix-list .row-text i { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mix-list .row-text b { font-size: 14px; font-weight: 600; }
 .mix-list .row-text span { font-size: 12px; color: var(--ink2); }
-.mix-list .row-text i { font-size: 12px; font-style: normal; color: var(--gold-ink); }
+.mix-list .row-text i { font-size: 12px; font-style: normal; color: var(--ink2); }
 .mix-list button { width: 32px; height: 32px; flex: none; border: none; border-radius: 16px; background: transparent; color: var(--ink2); font-size: 16px; cursor: pointer; }
 .mix-list button:hover { background: var(--bg); color: var(--ink); }
 .mix-list button:disabled { visibility: hidden; }
 
 /* ---- Crate Wrapped: your week in records ---- */
 .wrap { position: relative; margin-top: 24px; padding: 18px 18px 14px; border-radius: 22px; overflow: hidden; color: #fff;
-  background: radial-gradient(110% 90% at 0% 0%, #2c5541 0%, transparent 60%), radial-gradient(80% 90% at 100% 100%, rgba(220, 74, 38, 0.55) 0%, transparent 60%), #1d3a2b;
-  box-shadow: 0 14px 36px rgba(15, 31, 25, 0.3); }
+  background: var(--wrap-bg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18); }
 .wrap::after { content: ''; position: absolute; right: -60px; top: -60px; width: 180px; height: 180px; border-radius: 50%; opacity: 0.35; pointer-events: none;
   background: radial-gradient(circle, #0a0a0b 0 6%, transparent 7%), repeating-radial-gradient(circle, #101012 0 1.1px, #24242a 1.5px, #101012 2.3px); }
 .wrap > * { position: relative; z-index: 1; }
 .wrap-kicker { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255, 255, 255, 0.72); }
 .wrap h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; text-wrap: balance; }
 .wrap-sum { margin: 0 0 14px; font-size: 15px; line-height: 1.45; color: rgba(255, 255, 255, 0.88); text-wrap: pretty; }
-.wrap .pill.accent { background: var(--gold); color: var(--ink); }
+.wrap .pill.accent { background: #fff; color: #000; }
 .wrap .ac-msg { color: rgba(255, 255, 255, 0.8); }
-.wrap .ac-msg.error { color: #ffd9cc !important; }
+.wrap .ac-msg.error { color: #ff6961 !important; }
 .wrap-vibes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .wrap-vibes span { padding: 5px 11px; border-radius: 14px; background: rgba(255, 255, 255, 0.16); font-size: 13px; font-weight: 600; }
 .wrap-foot { display: flex; justify-content: space-between; }

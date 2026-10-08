@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f1e9dc">
-<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Crate">
@@ -35,8 +36,11 @@
         <div class="card-rec" id="makeCard">
           <div class="card-art" id="makeArt">
             <div class="card-empty" id="makeEmpty">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
-              <span>Search or paste a song to press a record</span>
+              <div class="house-sleeve" aria-hidden="true">
+                <span class="hs-meta l">Side A</span><span class="hs-meta">33⅓ RPM</span>
+                <div class="hs-hole"><div class="hs-label"></div></div>
+                <span class="hs-brand">crate</span>
+              </div>
             </div>
           </div>
           <div class="card-band">
@@ -59,7 +63,7 @@
     <div class="rows search-rows" id="searchRows" aria-label="Songs found"></div>
 
     <section class="ask" id="ask" hidden aria-label="Ask Crate">
-      <button class="ask-open" id="askOpen" type="button" aria-expanded="false"><span class="spark" aria-hidden="true">✦</span><span>Not sure what to send? <b>Ask Crate</b></span></button>
+      <button class="ask-open" id="askOpen" type="button" aria-expanded="false"><span>Not sure what to send? <b>Ask Crate</b></span></button>
       <form class="ask-form" id="askForm" autocomplete="off" hidden>
         <label for="askInput" class="visually-hidden">Who it’s for, or what the moment is</label>
         <input id="askInput" maxlength="200" placeholder="my sister, just moved to Tokyo, misses home">
@@ -79,7 +83,7 @@
 
     <section class="studio" id="studio" hidden aria-label="Who it's for">
       <section class="mix" id="mix" hidden aria-label="Mixtape">
-        <div class="note-head"><label for="mixName" class="mix-label">Mixtape name</label><button class="ai-pill" id="mixAI" type="button" hidden><span aria-hidden="true">✦</span> Sequence it for me</button></div>
+        <div class="note-head"><label for="mixName" class="mix-label">Mixtape name</label><button class="ai-pill" id="mixAI" type="button" hidden>Sequence it for me</button></div>
         <input class="mix-name" id="mixName" maxlength="60" placeholder="A mixtape" autocomplete="off">
         <ol class="mix-list" id="mixList"></ol>
       </section>
@@ -89,7 +93,7 @@
         <label class="field"><span>From</span><input id="from" maxlength="30" placeholder="Your name" autocomplete="given-name"></label>
       </div>
       <div class="field note-field">
-        <div class="note-head"><label for="note">Note <i>optional</i></label><button class="ai-pill" id="noteAI" type="button" hidden><span aria-hidden="true">✦</span> Write it for me</button></div>
+        <div class="note-head"><label for="note">Note <i>optional</i></label><button class="ai-pill" id="noteAI" type="button" hidden>Write it for me</button></div>
         <input id="note" maxlength="80" placeholder="this one's for the drive home" autocomplete="off">
         <div class="note-ideas" id="noteIdeas" role="group" aria-label="Note ideas"></div>
       </div>

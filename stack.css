@@ -19,22 +19,17 @@
 .slab-rec { position: absolute; left: 11px; top: 11px; width: 208px; height: 208px; border-radius: 50%; background: var(--groove); box-shadow: 0 0 0 2px #0a0a0b inset, 6px 10px 24px rgba(0, 0, 0, 0.35); }
 .slab-rec::before { content: ''; position: absolute; inset: 68px; border-radius: 50%; background: var(--a, var(--art)); }
 .slab-rec::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, #000 0 3px, transparent 3.5px), conic-gradient(transparent 0deg, rgba(255,255,255,0.12) 28deg, transparent 54deg, transparent 180deg, rgba(255,255,255,0.08) 206deg, transparent 232deg); }
-/* The sleeve: printed card stock. A soft sheen, the faint ring a record wears into its cover over the
-   years, a little paper grain, and an edge that catches the light. */
-.slab-art { position: absolute; inset: 0; border-radius: 2px; background: var(--a, var(--art)); transform: translateZ(0.5px); backface-visibility: hidden;
-  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.18), 0 2px 3px rgba(0, 0, 0, 0.12), 0 18px 36px rgba(0, 0, 0, 0.24); }
-.slab-art::before { content: ''; position: absolute; inset: 0; border-radius: 2px; pointer-events: none; opacity: 0.55; mix-blend-mode: soft-light;
+/* The sleeve: a sheet of printed card, as thin as the real thing. A soft sheen, the faint ring a record
+   wears into its cover, a little paper grain, and a hairline edge that catches the light as it tilts. */
+.slab-art { position: absolute; inset: 0; border-radius: 1.5px; background: var(--a, var(--art)); transform: translateZ(0.5px); backface-visibility: hidden;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.22), 0 1px 2px rgba(0, 0, 0, 0.18), 0 10px 22px rgba(0, 0, 0, 0.16); }
+.slab-art::before { content: ''; position: absolute; inset: 0; border-radius: 1.5px; pointer-events: none; opacity: 0.55; mix-blend-mode: soft-light;
   background:
     radial-gradient(circle at 50% 50%, transparent 0 43.2%, rgba(255, 255, 255, 0.5) 44%, transparent 45.5%, transparent 46.5%, rgba(255, 255, 255, 0.28) 47.2%, transparent 48.5%),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"); }
-.slab-art::after { content: ''; position: absolute; inset: 0; border-radius: 2px; pointer-events: none;
-  background: linear-gradient(118deg, rgba(255, 255, 255, 0.2), transparent 34%, transparent 70%, rgba(0, 0, 0, 0.12)),
-              linear-gradient(90deg, transparent 97%, rgba(0, 0, 0, 0.16)); }
-/* The edge: about 4px of card, seen as the sleeves tilt. */
-.slab-spine { position: absolute; left: 1px; right: 1px; height: 4px; backface-visibility: hidden;
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.18), transparent 12%, transparent 88%, rgba(0, 0, 0, 0.18)), var(--edge, #e3dccf); }
-.slab-spine.bottom { top: 100%; transform-origin: 50% 0; transform: rotateX(-90deg); }
-.slab-spine.top { bottom: 100%; transform-origin: 50% 100%; transform: rotateX(90deg); }
+.slab-art::after { content: ''; position: absolute; inset: 0; border-radius: 1.5px; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0, rgba(255, 255, 255, 0) 1.5px),
+              linear-gradient(118deg, rgba(255, 255, 255, 0.18), transparent 34%, transparent 70%, rgba(0, 0, 0, 0.1)); }
 .stack-info { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; margin: 8px 4px 0; }
 .stack-info b { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stack-info span { font-size: 14px; color: var(--ink2); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -46,7 +41,7 @@
 .stack-actions .btn { flex: 1; height: 48px; border-radius: 24px; font-size: 15px; }
 .fav { width: 48px; height: 48px; flex: none; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; background: var(--surface); color: var(--ink3); box-shadow: 0 0 0 1px var(--line) inset; transition: background 160ms, color 160ms, transform 160ms; }
 .fav:active { transform: scale(0.9); }
-.fav[aria-pressed="true"] { background: var(--accent); color: var(--label); }
+.fav[aria-pressed="true"] { color: var(--label); }
 .grid-head { margin: 4px 0 12px; }
 
 /* ---- Library: one card per music service ---- */

@@ -7,9 +7,9 @@
 }
 
 :root {
-  --bg: #0f1813;            /* record-shop green, nearly black */
+  --bg: #000000;
   --tint: #8a6a4a;
-  --sticker: oklch(0.86 0.12 80);
+  --sticker: #ffd60a;              /* systemYellow */
   --label-ring: oklch(0.88 0.04 80);
   --spotify: #1ed760;
   --art: linear-gradient(160deg, oklch(0.6 0.1 60), oklch(0.3 0.06 40));
@@ -23,8 +23,8 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-a { color: oklch(0.85 0.08 70); }
-a:hover { color: oklch(0.92 0.06 70); }
+a { color: #ff375f; }
+a:hover { color: #ff6482; }
 
 .page {
   min-height: 100vh;
@@ -191,8 +191,8 @@ a:hover { color: oklch(0.92 0.06 70); }
   padding: 0 22px;
   border: none;
   border-radius: 23px;
-  background: #f4eee6;
-  color: #141210;
+  background: #ffffff;
+  color: #000000;
   font: 700 15px -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, sans-serif;
   cursor: pointer;
 }
@@ -239,7 +239,7 @@ a:hover { color: oklch(0.92 0.06 70); }
 .track-text b, .track-text span, .track-text i { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .track-text b { font-size: 15px; font-weight: 600; color: #fff; }
 .track-text span { font-size: 13px; color: rgba(255, 255, 255, 0.6); }
-.track-text i { font-size: 12px; font-style: normal; color: oklch(0.85 0.08 70); }
+.track-text i { font-size: 12px; font-style: normal; color: rgba(235, 235, 245, 0.7); }
 .track-text i:empty { display: none; }
 .track-eq { display: none; align-items: flex-end; gap: 2px; height: 14px; flex: none; }
 .is-playing .track-eq { display: flex; }

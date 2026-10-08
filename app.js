@@ -963,7 +963,7 @@
     box.textContent = '';
     const add = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; box.appendChild(n); return n; };
     if (!mine) {
-      add('p', 'wrap-kicker', '✦ Crate Wrapped');
+      add('p', 'wrap-kicker', 'Crate Wrapped');
       add('h2', '', 'Your week in records');
       add('p', 'wrap-sum', items.length + ' records this week. Let Claude write up what you’ve been sending and hearing.');
       const go = add('button', 'pill accent', 'Wrap my week'), msg = add('p', 'ac-msg');
@@ -984,7 +984,7 @@
       return;
     }
     box.classList.add('done');
-    add('p', 'wrap-kicker', '✦ Your week in records');
+    add('p', 'wrap-kicker', 'Your week in records');
     add('h2', '', mine.headline);
     add('p', 'wrap-sum', mine.summary);
     const vibes = add('div', 'wrap-vibes');

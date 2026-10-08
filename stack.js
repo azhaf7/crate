@@ -7,7 +7,7 @@
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const el = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; };
 
-  // ---------- Cover colour, for the glow and the sleeve spines ----------
+  // ---------- Cover colour, for the glow behind the front sleeve ----------
   const tints = {};
   function tint(url, done) {
     if (!url || !A().artOK(url)) return null;
@@ -48,11 +48,11 @@
     const st = $('stack'); st.querySelectorAll('.slab').forEach((n) => n.remove()); outs = []; slabs = [];
     pos = target = Math.max(0, Math.min(list.length - 1, target));
     list.forEach((r, i) => {
-      // A sleeve is a thin card: the cover, a few millimetres of edge top and bottom, the record inside.
-      const s = el('<div class="slab"><div class="slab-rec"></div><div class="slab-spine bottom"></div><div class="slab-spine top"></div><div class="slab-art"></div></div>');
+      // A sleeve is a sheet of printed card with the record inside: no depth of its own.
+      const s = el('<div class="slab"><div class="slab-rec"></div><div class="slab-art"></div></div>');
       s.dataset.i = i;
       s.style.setProperty('--a', A().coverCSS ? A().coverCSS(r) : A().artCSS(r.art));
-      const tc = tint(r.art, paintTints); if (tc) s.style.setProperty('--edge', 'color-mix(in oklch, ' + tc + ' 40%, #efe6d6)');
+      tint(r.art, paintTints);
       st.appendChild(s);
       slabs.push(s);
     });
@@ -65,7 +65,6 @@
     focus = -1;
   }
   function paintTints() {
-    slabs.forEach((s, i) => { const r = list[i]; const tc = r && tints[r.art]; if (tc) s.style.setProperty('--edge', 'color-mix(in oklch, ' + tc + ' 40%, #efe6d6)'); });
     focus = -1;
   }
   const clamp = (v) => Math.max(0, Math.min(list.length - 1, v));
@@ -92,13 +91,13 @@
         if (ad > VISIBLE) { if (!s.hidden) { s.hidden = true; outs[i] = 0; } return; }
         if (s.hidden) s.hidden = false;
         const y = sd * (ad < 1 ? ad * 170 : 170 + (ad - 1) * 56), z = -m * 60 - Math.max(0, ad - 1) * 12;
-        s.style.transform = 'translate3d(' + (-(1 - m) * 36).toFixed(1) + 'px,' + y.toFixed(1) + 'px,' + z.toFixed(1) + 'px) rotateX(' + (sd * m * 64).toFixed(2) + 'deg) scale(' + (1 - m * 0.06).toFixed(3) + ')';
+        s.style.transform = 'translate3d(' + (-(1 - m) * 36).toFixed(1) + 'px,' + y.toFixed(1) + 'px,' + z.toFixed(1) + 'px) rotateX(' + (sd * m * 56).toFixed(2) + 'deg) scale(' + (1 - m * 0.06).toFixed(3) + ')';
         s.style.zIndex = String(1000 - Math.round(ad * 10));
         s.style.opacity = String(Math.max(0, Math.min(1, 6 - ad)));
         // The record stays in its sleeve until this one settles in front, then slides out and spins.
         const want = ad < 0.12 && !drag ? 1 : 0, cur = outs[i] || 0;
         const o = outs[i] = cur + (want - cur) * (1 - Math.exp(-dt / (want > cur ? 200 : 90))), e = o * o * (3 - 2 * o);
-        s.firstChild.style.transform = 'translateZ(-3px) translateX(' + (e * 96).toFixed(1) + 'px) rotate(' + (angle * e).toFixed(1) + 'deg)';
+        s.firstChild.style.transform = 'translateZ(-1px) translateX(' + (e * 96).toFixed(1) + 'px) rotate(' + (angle * e).toFixed(1) + 'deg)';
       });
       const f = clamp(Math.round(pos)); if (f !== focus) setFocus(f);
     }
