@@ -44,9 +44,10 @@ It's a web app: it works in any browser, and on iPhone or Android you can add it
   Records writes up your week in records: a headline, what you shared and with whom, three vibe words.
 - **Stats:** Records shows how many you've sent, how many were opened, and your friends' top reaction.
 - **Reactions:** you see your friend's reaction on Records next to Opened, and it counts on the badge.
-- **Discover:** what's playing right now in your country, by genre (Apple's public charts, no account
-  needed), with a 30-second preview on every song. Tap one to press it onto a record. Moments like "A rainy
-  Sunday" start Ask Crate. Spotify and Apple Music libraries show up here once they're set up.
+- **Discover:** records in their sleeves, not a list. **New on Apple Music** (the newest songs in today's
+  charts) and **New on Spotify** (Spotify's new releases) as shelves, then the top songs in your country by
+  genre: 50 on phones, 100 in a wider grid on computers. ▶ plays a 30-second preview and the record spins;
+  tap a sleeve to send it. Moments like "A rainy Sunday" start Ask Crate. No account needed.
 - **Appearance:** the button at the top of Make switches between Automatic (follows the phone), Light and Dark.
 - **The record link** carries the song, artist, cover, note and the Spotify / Apple Music IDs, so it
   opens anywhere even if the database is down. Links made by the Vinyl Player Mac app open here too.
@@ -150,6 +151,15 @@ account ($99/year). The `apple-music-token` Edge Function signs it, so the priva
    ```
 3. Set `appleMusic: true` in `config.js`.
 
+## New on Spotify (optional, Vercel)
+
+The "New on Spotify" shelf uses a Spotify app's Client Credentials, so nobody signs in and the 25-user
+limit for apps in development mode doesn't apply.
+
+1. At <https://developer.spotify.com/dashboard>, create an app (tick **Web API**) and open its **Settings**.
+2. In Vercel → your project → **Settings → Environment Variables**, add `SPOTIFY_CLIENT_ID` and
+   `SPOTIFY_CLIENT_SECRET`, then redeploy. Until they're set, Discover simply leaves the shelf out.
+
 ## Connect Spotify (optional)
 
 1. Go to <https://developer.spotify.com/dashboard> and create an app (any name). Tick **Web API**.
@@ -175,6 +185,7 @@ supabase/mixtapes.sql         Mixtapes: 2 to 5 songs per record
 supabase/functions/apple-music-token/  Edge Function: signs the Apple Music developer token
 api/card.js, vercel.json      Short links /s/<id> with link previews (Vercel)
 api/og.js, package.json       The preview picture: the record sliding out of its sleeve (Vercel)
+api/spotify-new.js            Spotify's new releases for Discover (Vercel)
 supabase/functions/crate-ai/  Edge Function: Ask Crate, "Write it for me", mixtape sequencing, Crate Wrapped (Claude)
 manifest.webmanifest, sw.js   Add to home screen, works on a poor connection
 ```

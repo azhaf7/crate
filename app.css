@@ -355,17 +355,59 @@ input::placeholder { color: var(--placeholder); }
 .moments::-webkit-scrollbar { display: none; }
 .moment { flex: none; width: 132px; height: 84px; padding: 12px; border: none; border-radius: 14px; text-align: left; font-size: 15px; font-weight: 700; line-height: 1.2; color: #fff; cursor: pointer; display: flex; align-items: flex-end; }
 .genres { margin: 0 -20px 6px; }
-.chart { list-style: none; margin: 0; padding: 0 0 0 14px; border-radius: 14px; background: var(--surface); }
-.chart li { display: flex; align-items: center; gap: 4px; border-bottom: 0.5px solid var(--line); }
-.chart li:last-child { border-bottom: none; }
-.chart-rank { width: 22px; flex: none; font-size: 15px; font-weight: 700; color: var(--ink2); font-variant-numeric: tabular-nums; }
-.chart-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 8px 0; border: none; background: none; text-align: left; cursor: pointer; }
-.chart-main img, .chart-main .ph { width: 48px; height: 48px; flex: none; border-radius: 4px; object-fit: cover; background: var(--chip); }
-.chart-main .row-text { min-width: 0; flex: 1; }
-.chart-main b, .chart-main span span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.chart-main b { font-size: 15px; font-weight: 500; }
-.chart-main span span { font-size: 13px; color: var(--ink2); }
-.chart-play { width: 44px; height: 44px; flex: none; margin-right: 4px; border: none; border-radius: 22px; background: none; color: var(--accent-text); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-.chart-play svg { width: 18px; height: 18px; }
-.chart-play[aria-pressed="true"] { background: var(--chip); }
+.vgrid { list-style: none; margin: 6px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 22px 16px; }
+.vrec { min-width: 0; display: flex; flex-direction: column; gap: 2px; animation: rise 420ms var(--ease) both; }
+/* The sleeve is 86% of the cell; the record behind it shows in the last 14% and slides out when playing. */
+.vrec-art { position: relative; width: 100%; aspect-ratio: 1 / 0.86; margin-bottom: 6px; }
+.vrec-disc { position: absolute; top: 50%; left: 18%; width: 80%; aspect-ratio: 1; border-radius: 50%; transform: translateY(-50%);
+  background: var(--groove); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16), inset 0 0 0 2px #0a0a0b, 4px 6px 14px rgba(0, 0, 0, 0.35);
+  display: flex; align-items: center; justify-content: center; transition: left 600ms var(--ease); }
+.vrec-disc::after { content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  background: conic-gradient(transparent 0deg, rgba(255,255,255,0.12) 28deg, transparent 54deg, transparent 180deg, rgba(255,255,255,0.08) 206deg, transparent 232deg); }
+.vrec-label { width: 36%; aspect-ratio: 1; border-radius: 50%; background: center / cover no-repeat var(--label); box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.6);
+  position: relative; animation: spin 1.8s linear infinite paused; }
+.vrec-label::after { content: ''; position: absolute; left: 50%; top: 50%; width: 9%; aspect-ratio: 1; margin: -4.5% 0 0 -4.5%; border-radius: 50%; background: #000; }
+.vrec-sleeve { position: absolute; left: 0; top: 0; width: 86%; height: 100%; padding: 0; border: none; border-radius: 2px; overflow: hidden; cursor: pointer;
+  background: var(--sleeve); box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.22), 0 1px 2px rgba(0, 0, 0, 0.18), 0 10px 22px rgba(0, 0, 0, 0.16); transition: transform 300ms var(--ease); }
+.vrec-sleeve img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* Printed card: a soft sheen and the faint ring a record wears into its cover. */
+.vrec-sleeve::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, transparent 0 43%, rgba(255, 255, 255, 0.16) 44%, transparent 45.5%),
+              linear-gradient(118deg, rgba(255, 255, 255, 0.2), transparent 34%, transparent 70%, rgba(0, 0, 0, 0.12)); }
+.vrec-rank { position: absolute; left: 6px; top: 6px; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px; background: rgba(0, 0, 0, 0.72);
+  color: #fff; font-size: 12px; font-weight: 700; line-height: 24px; text-align: center; }
+.vrec-play { position: absolute; left: calc(86% - 46px); bottom: 6px; width: 40px; height: 40px; border: none; border-radius: 20px; cursor: pointer;
+  background: rgba(0, 0, 0, 0.7); color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+.vrec-play::after { content: ''; position: absolute; inset: -2px; }
+.vrec-play svg { width: 16px; height: 16px; }
+.vrec-title, .vrec-artist { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vrec-title { font-size: 14px; font-weight: 600; }
+.vrec-artist { font-size: 13px; color: var(--ink2); }
+@media (hover: hover) { .vrec-art:hover .vrec-disc { left: 22%; } .vrec-art:hover .vrec-sleeve { transform: translateY(-2px); } }
+.vrec.is-playing .vrec-disc { left: 27%; }
+.vrec.is-playing .vrec-label { animation-play-state: running; }
+.vrec.is-playing .vrec-play { background: var(--accent); }
 .chart-foot { margin: 8px 2px 0; font-size: 12px; color: var(--ink2); }
+
+/* New releases: a shelf of records you scroll sideways. */
+.vshelf { list-style: none; display: flex; gap: 14px; overflow-x: auto; margin: 0 -20px; padding: 0 20px 6px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.vshelf::-webkit-scrollbar { display: none; }
+.vshelf .vrec { flex: none; width: 152px; scroll-snap-align: start; }
+.vrec-rank:empty { display: none; }
+.vrec-play.loading svg { animation: breathe 900ms ease-in-out infinite; }
+.vrec-play:disabled { opacity: 0.35; cursor: default; }
+
+/* ---- Responsive: phones keep the 440px column; on big screens Discover spreads out into a wide grid ---- */
+@media (min-width: 760px) {
+  body[data-view="library"] .app { max-width: 1240px; }
+  body[data-view="library"] #view-library { padding: 0 36px; }
+  #view-library .moments, #view-library .vshelf, #view-library .genres { margin-left: -36px; margin-right: -36px; padding-left: 36px; padding-right: 36px; }
+  .vgrid { grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 30px 24px; }
+  .vshelf { gap: 22px; }
+  .vshelf .vrec { width: 188px; }
+  .moment { width: 190px; height: 104px; font-size: 17px; }
+  .disc-section { margin-top: 32px; }
+  .disc-section > h2 { font-size: 24px; }
+  .vrec-title { font-size: 15px; }
+}
+@media (min-width: 1100px) { .vshelf .vrec { width: 200px; } }

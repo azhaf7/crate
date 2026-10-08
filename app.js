@@ -1043,7 +1043,7 @@
   // ---------- Discover: what's playing right now, no account needed ----------
   // Apple's public iTunes charts (they answer any site), by country and genre, each song with Apple's
   // 30-second preview. Spotify and Apple Music libraries appear underneath only once they're set up.
-  const GENRES = [['', 'Top 50'], ['14', 'Pop'], ['18', 'Hip-Hop'], ['15', 'R&B'], ['17', 'Dance'], ['20', 'Alternative'],
+  const GENRES = [['', 'All'], ['14', 'Pop'], ['18', 'Hip-Hop'], ['15', 'R&B'], ['17', 'Dance'], ['20', 'Alternative'],
                   ['21', 'Rock'], ['6', 'Country'], ['12', 'Latin'], ['51', 'K-Pop']];
   // Moments for Ask Crate, on Apple's accessible system colours (white text passes on each).
   const MOMENTS = [['A rainy Sunday', '#0040dd'], ['Their birthday', '#d70015'], ['After a breakup', '#5856d6'],
@@ -1053,10 +1053,10 @@
   const chartCache = {};
   const countryName = (c) => { try { return new Intl.DisplayNames([navigator.language || 'en'], { type: 'region' }).of(c.toUpperCase()); } catch (e) { return c.toUpperCase(); } };
 
-  async function fetchChart(country, genre) {
-    const key = country + ':' + genre;
+  async function fetchChart(country, genre, limit = 50) {
+    const key = country + ':' + genre + ':' + limit;
     if (chartCache[key]) return chartCache[key];
-    const j = await fetchJSON('https://itunes.apple.com/' + country + '/rss/topsongs/limit=50' + (genre ? '/genre=' + genre : '') + '/json');
+    const j = await fetchJSON('https://itunes.apple.com/' + country + '/rss/topsongs/limit=' + limit + (genre ? '/genre=' + genre : '') + '/json');
     const entries = [].concat((j.feed && j.feed.entry) || []);
     const songs = entries.map((e) => {
       const imgs = e['im:image'] || [], links = [].concat(e.link || []);
@@ -1064,31 +1064,131 @@
       return { title: (e['im:name'] || {}).label || '', artist: (e['im:artist'] || {}).label || '',
                apple: String(((e.id || {}).attributes || {})['im:id'] || ''), spotify: '',
                art: big(((imgs[imgs.length - 1] || {}).label || '').replace(/\/\d+x\d+bb\./, '/100x100bb.')),
-               preview: prev && /^https:\/\//.test(prev.attributes.href) ? prev.attributes.href : '' };
+               preview: prev && /^https:\/\//.test(prev.attributes.href) ? prev.attributes.href : '',
+               released: (e['im:releaseDate'] || {}).label || '' };
     }).filter((x) => x.title && /^\d{4,15}$/.test(x.apple));
     return (chartCache[key] = songs);
   }
 
+  // "New on Apple Music": the newest songs in today's Top 200, out in the last four weeks, newest first.
+  // (Apple no longer publishes a plain new-releases feed; these are new songs people are actually playing.)
+  async function fetchFreshApple(country) {
+    const since = Date.now() - 28 * 864e5;
+    return (await fetchChart(country, '', 200)).filter((x) => Date.parse(x.released) >= since)
+      .sort((a, b) => Date.parse(b.released) - Date.parse(a.released)).slice(0, 20);
+  }
+
+  // "New on Spotify": Spotify's own new releases, through api/spotify-new.js (Vercel). Where that isn't
+  // set up, the shelf is left out.
+  async function fetchSpotifyNew(country) {
+    const key = 'sp:' + country;
+    if (chartCache[key]) return chartCache[key];
+    const r = await fetch(new URL('api/spotify-new?country=' + country, location.origin + location.pathname));
+    if (!r.ok) throw new Error('spotify ' + r.status);
+    const j = await r.json();
+    return (chartCache[key] = (j.songs || []).filter((x) => x.title && x.spotify));
+  }
+
+  // Spotify gives no previews any more; Apple's 30-second clip of the same song stands in.
+  function findApplePreview(x) {
+    return itunes('search?media=music&entity=song&limit=10&term=' + encodeURIComponent(x.title + ' ' + x.artist)).then((j) => {
+      const want = plain(x.title), by = x.artist.toLowerCase().split(/,|&| feat/)[0].trim();
+      const r = (j.results || []).find((y) => plain(y.trackName) === want && (y.artistName || '').toLowerCase().includes(by));
+      return r && /^https:\/\//.test(r.previewUrl || '') ? { preview: r.previewUrl, apple: String(r.trackId) } : null;
+    }).catch(() => null);
+  }
+
+  const shortDate = (iso) => { try { return new Date(iso).toLocaleDateString(navigator.language || 'en', { day: 'numeric', month: 'short' }); } catch (e) { return ''; } };
+
   function stopChartPreview() {
     if (chartAudio) chartAudio.pause();
-    if (chartPlaying) chartPlaying.setAttribute('aria-pressed', 'false');
+    if (chartPlaying) {
+      chartPlaying.setAttribute('aria-pressed', 'false');
+      chartPlaying.innerHTML = PLAY;
+      const li = chartPlaying.closest('li');
+      if (li) li.classList.remove('is-playing');
+    }
     chartPlaying = null;
   }
   const PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>';
   const PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4.5" width="4" height="15" rx="1" fill="currentColor"/><rect x="14" y="4.5" width="4" height="15" rx="1" fill="currentColor"/></svg>';
+  // While a preview plays, its record slides further out of the sleeve and spins.
   function chartPreview(btn, song) {
-    if (chartPlaying === btn) { stopChartPreview(); btn.innerHTML = PLAY; return; }
-    if (chartPlaying) chartPlaying.innerHTML = PLAY;
+    if (chartPlaying === btn) { stopChartPreview(); return; }
     stopChartPreview();
     if (!chartAudio) {
       chartAudio = new Audio();
-      chartAudio.addEventListener('ended', () => { if (chartPlaying) chartPlaying.innerHTML = PLAY; stopChartPreview(); });
+      chartAudio.addEventListener('ended', stopChartPreview);
     }
+    btn.closest('li').classList.add('is-playing');
     chartAudio.src = song.preview;
-    chartAudio.play().catch(() => {});
+    // If the phone won't start sound here, put the button back rather than show a silent "playing".
+    chartAudio.play().catch(() => { if (chartPlaying === btn) stopChartPreview(); });
     chartPlaying = btn;
     btn.setAttribute('aria-pressed', 'true');
     btn.innerHTML = PAUSE;
+  }
+
+  async function playSong(btn, song) {
+    if (!song.preview && !song.looked) {
+      song.looked = true;
+      btn.classList.add('loading');
+      Object.assign(song, (await findApplePreview(song)) || {});
+      btn.classList.remove('loading');
+    }
+    if (!song.preview) { btn.disabled = true; btn.setAttribute('aria-label', 'No preview for ' + song.title); return; }
+    chartPreview(btn, song);
+  }
+
+  // One record in its sleeve: the record peeks out with the cover on its label. Tap the sleeve to send
+  // it, ▶ to hear it (the record slides out and spins). The badge shows the chart place or release date.
+  function vrecItem(x, badge, i) {
+    const li = document.createElement('li');
+    li.className = 'vrec';
+    li.style.animationDelay = Math.min(i, 12) * 40 + 'ms';
+    li.innerHTML = '<div class="vrec-art"><div class="vrec-disc"><div class="vrec-label"></div></div>' +
+      '<button type="button" class="vrec-sleeve"><img alt="" loading="lazy" decoding="async"><span class="vrec-rank"></span></button></div>' +
+      '<b class="vrec-title"></b><span class="vrec-artist"></span>';
+    if (artOK(x.art)) {
+      li.querySelector('img').src = x.art;
+      li.querySelector('.vrec-label').style.backgroundImage = cssURL(x.art.replace('600x600bb', '200x200bb'));
+    }
+    li.querySelector('.vrec-rank').textContent = badge || '';
+    li.querySelector('.vrec-title').textContent = x.title;
+    li.querySelector('.vrec-artist').textContent = x.artist;
+    const sleeve = li.querySelector('.vrec-sleeve');
+    sleeve.setAttribute('aria-label', (badge ? badge + ': ' : '') + x.title + ' by ' + x.artist + '. Tap to send.');
+    sleeve.addEventListener('click', () => {
+      stopChartPreview();
+      location.hash = '#/';
+      setTimeout(() => (x.apple ? pickSong(x) : showRecord({ title: x.title, artist: x.artist, art: x.art, spotify: x.spotify, apple: '' })), 0);
+    });
+    if (x.preview || x.spotify) {
+      const play = document.createElement('button');
+      play.type = 'button'; play.className = 'vrec-play'; play.innerHTML = PLAY;
+      play.setAttribute('aria-pressed', 'false'); play.setAttribute('aria-label', 'Preview ' + x.title);
+      play.addEventListener('click', () => playSong(play, x));
+      li.querySelector('.vrec-art').appendChild(play);
+    }
+    return li;
+  }
+
+  // A shelf that fills in when its songs arrive, or disappears if there are none.
+  function shelf(sec, load) {
+    const row = document.createElement('ol');
+    row.className = 'vshelf';
+    sec.appendChild(row);
+    load().then(async (songs) => {
+      if (!songs || songs.length < 3) { sec.remove(); return; }
+      songs.forEach((x, i) => row.appendChild(vrecItem(x, shortDate(x.released), i)));
+      // Find Apple's clips for songs that came without one (Spotify's), a few at a time and before anyone
+      // taps, so ▶ can start the sound straight from the tap: phones only allow that inside a tap.
+      for (const x of songs.filter((y) => !y.preview && !y.looked).slice(0, 12)) {
+        if (!document.body.contains(row)) return;
+        x.looked = true;
+        Object.assign(x, (await findApplePreview(x)) || {});
+      }
+    }).catch(() => sec.remove());
   }
 
   // Straight to Make with Ask Crate already asking.
@@ -1119,6 +1219,11 @@
       sec.appendChild(wrap);
     }
 
+    shelf(section('New on Apple Music'), () => fetchFreshApple(chartCountry));
+    shelf(section('New on Spotify'), () => fetchSpotifyNew(chartCountry));
+
+    // Wide screens show a bigger grid, so they get the top 100; phones the top 50.
+    const chartSize = matchMedia('(min-width: 760px)').matches ? 100 : 50;
     const sec = section('Top songs in ' + countryName(chartCountry));
     const genres = document.createElement('div');
     genres.className = 'chips genres'; genres.setAttribute('role', 'toolbar'); genres.setAttribute('aria-label', 'Genre');
@@ -1130,31 +1235,14 @@
       genres.appendChild(b);
     });
     const list = document.createElement('ol'), note = document.createElement('p');
-    list.className = 'chart'; note.className = 'empty'; note.textContent = 'Loading the charts…';
+    list.className = 'vgrid'; note.className = 'empty'; note.textContent = 'Loading the charts…';
     sec.append(genres, list, note);
-    fetchChart(chartCountry, chartGenre)
+    fetchChart(chartCountry, chartGenre, chartSize)
       .then((songs) => {
         // Not every country has every genre; fall back to the US chart rather than show nothing.
         if (!songs.length && chartCountry !== 'us') { chartCountry = 'us'; return renderLibrary(); }
         note.remove();
-        songs.forEach((x, i) => {
-          const li = document.createElement('li');
-          li.innerHTML = '<span class="chart-rank"></span><button type="button" class="chart-main"><img alt=""><span class="row-text"><b></b><span></span></span></button>';
-          li.querySelector('.chart-rank').textContent = i + 1;
-          li.querySelector('img').src = x.art;
-          li.querySelector('b').textContent = x.title;
-          li.querySelector('.row-text span').textContent = x.artist;
-          li.querySelector('.chart-main').setAttribute('aria-label', 'Send ' + x.title + ' by ' + x.artist);
-          li.querySelector('.chart-main').addEventListener('click', () => { stopChartPreview(); location.hash = '#/'; setTimeout(() => pickSong(x), 0); });
-          if (x.preview) {
-            const play = document.createElement('button');
-            play.type = 'button'; play.className = 'chart-play'; play.innerHTML = PLAY;
-            play.setAttribute('aria-pressed', 'false'); play.setAttribute('aria-label', 'Preview ' + x.title);
-            play.addEventListener('click', () => chartPreview(play, x));
-            li.appendChild(play);
-          }
-          list.appendChild(li);
-        });
+        songs.forEach((x, i) => list.appendChild(vrecItem(x, String(i + 1), i)));
         const foot = document.createElement('p');
         foot.className = 'chart-foot'; foot.textContent = 'From Apple’s charts, updated daily.';
         sec.appendChild(foot);
@@ -1317,6 +1405,7 @@
     if (h === 'records/sent') crateKind = 'sent';
     if (h === 'records/received') crateKind = 'received';
     ['make', 'crate', 'library'].forEach((v) => { $('view-' + v).hidden = v !== view; });
+    document.body.dataset.view = view;   // lets Discover use the whole width on big screens
     $('tabMake').toggleAttribute('aria-current', view === 'make'); if (view === 'make') $('tabMake').setAttribute('aria-current', 'page');
     $('tabCrate').toggleAttribute('aria-current', view === 'crate'); if (view === 'crate') $('tabCrate').setAttribute('aria-current', 'page');
     $('tabLibrary').toggleAttribute('aria-current', view === 'library'); if (view === 'library') $('tabLibrary').setAttribute('aria-current', 'page');
