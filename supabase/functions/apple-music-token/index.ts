@@ -30,7 +30,7 @@ async function sign(team: string, kid: string, pem: string, origins: string[]): 
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return reply(204, null);
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   const team = Deno.env.get("APPLE_TEAM_ID"), kid = Deno.env.get("APPLE_KEY_ID"), pem = Deno.env.get("APPLE_MUSIC_KEY");
   if (!team || !kid || !pem) return reply(503, { error: "Apple Music isn’t set up on this Crate yet." });
   try {

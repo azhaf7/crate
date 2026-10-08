@@ -106,7 +106,7 @@ async function allowed(auth: string): Promise<boolean> {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return reply(204, null);
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (req.method !== "POST") return reply(405, { error: "POST only" });
   const auth = req.headers.get("Authorization") || "";
   let body: Record<string, unknown>;
